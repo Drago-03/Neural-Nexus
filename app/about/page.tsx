@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import AnimatedLogo from "@/components/AnimatedLogo";
 
 export default function AboutPage() {
   // Team members data
@@ -28,8 +29,8 @@ export default function AboutPage() {
       image: "/team/Mantej.png",
       bio: "Visionary founder with a passion for democratizing AI. Leading Neural Nexus to transform how AI models are shared and monetized.",
       social: {
-        linkedin: "https://linkedin.com/in/mantejsingh",
-        github: "https://github.com/mantejsingh"
+        linkedin: "https://www.linkedin.com/in/mantej-singh-arora/",
+        github: "https://github.com/Drago-03/Neural-Nexus"
       }
     },
     {
@@ -38,8 +39,8 @@ export default function AboutPage() {
       image: "/team/Avya.png",
       bio: "Experienced ML engineer leading our technical infrastructure. Expert in optimizing model performance and scalability.",
       social: {
-        linkedin: "https://linkedin.com/in/avyagiri",
-        github: "https://github.com/avyagiri"
+        linkedin: "https://www.linkedin.com/in/avya-giri/",
+        github: "https://github.com/AvyaGiri"
       }
     },
     {
@@ -48,8 +49,8 @@ export default function AboutPage() {
       image: "/team/Fatima.png",
       bio: "Strategic leader driving business growth and partnerships. Passionate about the intersection of AI and business innovation.",
       social: {
-        linkedin: "https://linkedin.com/in/fatimak",
-        github: "https://github.com/fatimak"
+        linkedin: "https://www.linkedin.com/in/mantej-singh-arora/",
+        github: "https://github.com/Drago-03/Neural-Nexus"
       }
     }
   ];
@@ -226,10 +227,28 @@ export default function AboutPage() {
             </div>
             
             <div className="lg:w-1/2 relative">
-              <div className="aspect-video bg-gradient-to-br from-purple-900/20 via-gray-900 to-blue-900/20 rounded-xl border border-gray-800 p-6 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-7xl mb-4">🚀</div>
-                  <div className="text-lg text-gray-300">Image Placeholder</div>
+              <div className="aspect-video rounded-xl overflow-hidden relative">
+                {/* Blurred background with gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 via-blue-600/20 to-cyan-600/30 backdrop-blur-lg"></div>
+                
+                {/* Animated particles or dots */}
+                <div className="absolute inset-0 opacity-20">
+                  <div className="absolute top-1/4 left-1/4 w-20 h-20 bg-purple-500 rounded-full filter blur-xl animate-pulse"></div>
+                  <div className="absolute bottom-1/3 right-1/4 w-16 h-16 bg-blue-500 rounded-full filter blur-xl animate-pulse animation-delay-1000"></div>
+                  <div className="absolute top-1/2 right-1/3 w-24 h-24 bg-cyan-500 rounded-full filter blur-xl animate-pulse animation-delay-2000"></div>
+                </div>
+                
+                {/* Logo and text container */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
+                  <div className="mb-6">
+                    <AnimatedLogo width={120} height={120} />
+                  </div>
+                  <h3 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 text-transparent bg-clip-text mb-4">
+                    Neural Nexus
+                  </h3>
+                  <p className="text-white/90 text-center text-lg max-w-md">
+                    Building the future of AI democratization, one model at a time
+                  </p>
                 </div>
               </div>
               
@@ -429,7 +448,7 @@ export default function AboutPage() {
             <p className="mb-4"><span className="text-purple-400">Location:</span> Indie Hub office, Chandigarh, India</p>
             <div className="flex justify-center gap-4">
               <a
-                href="https://github.com/Drago-03/AI-Model-Hub.git"
+                href="https://github.com/Drago-03/Neural-Nexus"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-white transition-colors"

@@ -305,13 +305,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Partners Section with actual SVG logos */}
+      {/* Partners Section with names only */}
       <section className="relative py-24 overflow-hidden">
-        {/* Background gradient and blobs */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-50 to-slate-100 dark:from-gray-950 dark:to-gray-900">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/20 rounded-full filter blur-3xl animate-blob"></div>
-          <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-blue-500/20 rounded-full filter blur-3xl animate-blob animation-delay-2000"></div>
-          <div className="absolute bottom-1/4 right-1/3 w-72 h-72 bg-teal-500/20 rounded-full filter blur-3xl animate-blob animation-delay-4000"></div>
+        {/* Background with blur effect */}
+        <div className="absolute inset-0 backdrop-blur-md bg-transparent">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/10 rounded-full filter blur-3xl animate-blob"></div>
+          <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-blue-500/10 rounded-full filter blur-3xl animate-blob animation-delay-2000"></div>
+          <div className="absolute bottom-1/4 right-1/3 w-72 h-72 bg-teal-500/10 rounded-full filter blur-3xl animate-blob animation-delay-4000"></div>
         </div>
 
         <div className="container px-4 mx-auto relative z-10">
@@ -323,178 +323,30 @@ export default function HomePage() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-purple-500">Our Partners</h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">Collaborating with industry leaders to push the boundaries of AI innovation forward</p>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">Collaborating with industry leaders to push the boundaries of AI innovation forward</p>
           </motion.div>
 
-          {/* Major Partners Grid with actual logos */}
+          {/* Major Partners Grid with text only */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.3 }}
-              whileHover={{ scale: 1.05 }}
-              className="flex justify-center"
-            >
-              <a href="#" className="block group relative">
-                <div className="w-40 h-24 flex items-center justify-center filter grayscale hover:grayscale-0 transition-all duration-300 hover:drop-shadow-glow">
-                  <Image 
-                    src="/partners/google.svg" 
-                    alt="Google" 
-                    width={120} 
-                    height={40}
-                    className="object-contain" 
-                  />
-                </div>
-              </a>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              whileHover={{ scale: 1.05 }}
-              className="flex justify-center"
-            >
-              <a href="#" className="block group relative">
-                <div className="w-40 h-24 flex items-center justify-center filter grayscale hover:grayscale-0 transition-all duration-300 hover:drop-shadow-glow">
-                  <Image 
-                    src="/partners/microsoft.svg" 
-                    alt="Microsoft" 
-                    width={120} 
-                    height={40}
-                    className="object-contain" 
-                  />
-                </div>
-              </a>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              whileHover={{ scale: 1.05 }}
-              className="flex justify-center"
-            >
-              <a href="#" className="block group relative">
-                <div className="w-40 h-24 flex items-center justify-center filter grayscale hover:grayscale-0 transition-all duration-300 hover:drop-shadow-glow">
-                  <Image 
-                    src="/partners/github.svg" 
-                    alt="GitHub" 
-                    width={120} 
-                    height={40}
-                    className="object-contain" 
-                  />
-                </div>
-              </a>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.3, delay: 0.3 }}
-              whileHover={{ scale: 1.05 }}
-              className="flex justify-center"
-            >
-              <a href="#" className="block group relative">
-                <div className="w-40 h-24 flex items-center justify-center filter grayscale hover:grayscale-0 transition-all duration-300 hover:drop-shadow-glow">
-                  <Image 
-                    src="/partners/redis.svg" 
-                    alt="Redis" 
-                    width={120} 
-                    height={40}
-                    className="object-contain" 
-                  />
-                </div>
-              </a>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.3, delay: 0.4 }}
-              whileHover={{ scale: 1.05 }}
-              className="flex justify-center"
-            >
-              <a href="#" className="block group relative">
-                <div className="w-40 h-24 flex items-center justify-center filter grayscale hover:grayscale-0 transition-all duration-300 hover:drop-shadow-glow">
-                  <Image 
-                    src="/partners/metamask.svg" 
-                    alt="MetaMask" 
-                    width={120} 
-                    height={40}
-                    className="object-contain" 
-                  />
-                </div>
-              </a>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.3, delay: 0.5 }}
-              whileHover={{ scale: 1.05 }}
-              className="flex justify-center"
-            >
-              <a href="#" className="block group relative">
-                <div className="w-40 h-24 flex items-center justify-center filter grayscale hover:grayscale-0 transition-all duration-300 hover:drop-shadow-glow">
-                  <Image 
-                    src="/partners/walletconnect.svg" 
-                    alt="WalletConnect" 
-                    width={120} 
-                    height={40}
-                    className="object-contain" 
-                  />
-                </div>
-              </a>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.3, delay: 0.6 }}
-              whileHover={{ scale: 1.05 }}
-              className="flex justify-center"
-            >
-              <a href="#" className="block group relative">
-                <div className="w-40 h-24 flex items-center justify-center filter grayscale hover:grayscale-0 transition-all duration-300 hover:drop-shadow-glow">
-                  <Image 
-                    src="/partners/coinbase.svg" 
-                    alt="Coinbase" 
-                    width={120} 
-                    height={40}
-                    className="object-contain" 
-                  />
-                </div>
-              </a>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.3, delay: 0.7 }}
-              whileHover={{ scale: 1.05 }}
-              className="flex justify-center"
-            >
-              <a href="#" className="block group relative">
-                <div className="w-40 h-24 flex items-center justify-center filter grayscale hover:grayscale-0 transition-all duration-300 hover:drop-shadow-glow">
-                  <Image 
-                    src="/partners/aws.svg" 
-                    alt="AWS" 
-                    width={120} 
-                    height={40}
-                    className="object-contain" 
-                  />
-                </div>
-              </a>
-            </motion.div>
+            {["Google", "Microsoft", "GitHub", "Redis", "MetaMask", "WalletConnect", "Coinbase", "AWS"].map((partner, index) => (
+              <motion.div 
+                key={index}
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                whileHover={{ scale: 1.05 }}
+                className="flex justify-center"
+              >
+                <a href="#" className="block group relative">
+                  <div className="w-40 h-24 flex items-center justify-center">
+                    <span className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400 hover:from-pink-400 hover:to-indigo-400 transition-all duration-300">
+                      {partner}
+                    </span>
+                  </div>
+                </a>
+              </motion.div>
+            ))}
           </div>
           
           {/* Additional Partners in Ticker */}
@@ -506,7 +358,7 @@ export default function HomePage() {
               transition={{ duration: 0.5 }}
               className="text-center mb-6"
             >
-              <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400">And Many More</h3>
+              <h3 className="text-lg font-medium text-gray-400">And Many More</h3>
             </motion.div>
             
             <div className="relative w-full">
@@ -527,7 +379,7 @@ export default function HomePage() {
                 ].map((partner, index) => (
                   <span 
                     key={index} 
-                    className="inline-block px-8 text-gray-500 dark:text-gray-400 text-lg font-medium opacity-70 hover:opacity-100 transition-opacity duration-300"
+                    className="inline-block px-8 text-xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 hover:from-violet-400 hover:to-blue-400 transition-all duration-300"
                   >
                     {partner}
                   </span>

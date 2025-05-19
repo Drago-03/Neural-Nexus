@@ -62,7 +62,7 @@ export function ProfileSidebar({ isOpen, onClose, className = '' }: ProfileSideb
             <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700" />
             <div>
               <h3 className="font-medium text-gray-900 dark:text-white">John Doe</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">john@example.com</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">john@yourdomain.com</p>
             </div>
           </div>
         </div>

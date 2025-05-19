@@ -80,8 +80,8 @@ const ContactPage = () => {
   ];
   
   const socialLinks = [
-    { icon: <Github className="w-6 h-6" />, name: "GitHub", url: "https://github.com/aimodelhub", color: "hover:text-white" },
-    { icon: <Linkedin className="w-6 h-6" />, name: "LinkedIn", url: "https://linkedin.com/company/aimodelhub", color: "hover:text-blue-600" },
+    { icon: <Github className="w-6 h-6" />, name: "GitHub", url: "https://github.com/Drago-03/Neural-Nexus", color: "hover:text-white" },
+    { icon: <Linkedin className="w-6 h-6" />, name: "LinkedIn", url: "https://www.linkedin.com/in/mantej-singh-arora/", color: "hover:text-blue-600" },
     { icon: <Instagram className="w-6 h-6" />, name: "Instagram", url: "https://instagram.com/aimodelhub", color: "hover:text-pink-600" }
   ];
   

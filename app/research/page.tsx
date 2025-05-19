@@ -329,15 +329,17 @@ export default function ResearchPage() {
                   Explore Research
                 </span>
               </AnimatedButton>
-              <AnimatedButton 
-                variant="outline" 
-                size="lg"
-              >
-                <span className="flex items-center">
-                  <Users className="mr-2 h-5 w-5" />
-                  Join Our Team
-                </span>
-              </AnimatedButton>
+              <Link href="/careers">
+                <AnimatedButton 
+                  variant="outline" 
+                  size="lg"
+                >
+                  <span className="flex items-center">
+                    <Users className="mr-2 h-5 w-5" />
+                    Join Our Team
+                  </span>
+                </AnimatedButton>
+              </Link>
             </div>
           </motion.div>
         </div>
@@ -736,15 +738,17 @@ export default function ResearchPage() {
                   Apply to Collaborate
                 </span>
               </AnimatedButton>
-              <AnimatedButton 
-                variant="outline" 
-                size="lg"
-              >
-                <span className="flex items-center">
-                  <ExternalLink className="mr-2 h-5 w-5" />
-                  View Open Positions
-                </span>
-              </AnimatedButton>
+              <Link href="/careers">
+                <AnimatedButton 
+                  variant="outline" 
+                  size="lg"
+                >
+                  <span className="flex items-center">
+                    <ExternalLink className="mr-2 h-5 w-5" />
+                    View Open Positions
+                  </span>
+                </AnimatedButton>
+              </Link>
             </div>
           </motion.div>
         </div>

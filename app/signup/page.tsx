@@ -1,133 +1,383 @@
 "use client";
 
-import React, { useState } from 'react';
+// The dynamic export configuration at the top ensures this page is only rendered client-side
+export const dynamic = "force-dynamic";
+export const runtime = "experimental-edge";
+export const dynamicParams = true;
+
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { SignInMenu } from '@/src/components/auth/SignInMenu';
+import AuthLayout from '@/src/components/auth/AuthLayout';
+import { Input } from '@/src/components/ui/Input';
+import { Button } from '@/src/components/ui/Button';
+import { Mail, Lock, Github, AlertCircle, User } from 'lucide-react';
 import Link from 'next/link';
-import { ArrowRight, LogIn, UserPlus } from "lucide-react";
+import { useSupabase } from '@/providers/SupabaseProvider';
+import { useRouter } from 'next/navigation';
+import nextDynamic from 'next/dynamic';
 
-// Remove edge runtime to avoid size limits
-// export const runtime = 'edge';
+// Dynamically import toast to avoid 'document is not defined' during SSR
+const ToastProvider = nextDynamic(
+  () => import('react-hot-toast').then((mod) => ({ default: () => null, toast: mod.toast })),
+  { ssr: false }
+);
 
-export default function SignupPage() {
-  // State to control if the SignInMenu is open
-  const [showSignInMenu, setShowSignInMenu] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
+interface AuthError {
+  field: 'email' | 'password' | 'firstName' | 'lastName' | 'username' | 'general';
+  message: string;
+}
+
+export default function SignUpPage() {
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<AuthError | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  const { supabase } = useSupabase();
+  const router = useRouter();
   
-  const openSignIn = () => {
-    setAuthMode('signin');
-      setShowSignInMenu(true);
+  // Set isClient to true when component mounts to ensure we only access browser APIs on the client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear errors when user starts typing
+    if (error && error.field === name) {
+      setError(null);
+    }
   };
   
-  const openSignUp = () => {
-    setAuthMode('signup');
-    setShowSignInMenu(true);
+  const validateForm = () => {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError({
+        field: 'email',
+        message: 'Please enter a valid email address'
+      });
+      return false;
+    }
+    
+    // Validate first name
+    if (!formData.firstName.trim()) {
+      setError({
+        field: 'firstName',
+        message: 'First name is required'
+      });
+      return false;
+    }
+    
+    // Validate username
+    if (!formData.username.trim()) {
+      setError({
+        field: 'username',
+        message: 'Username is required'
+      });
+      return false;
+    }
+    
+    // Username format validation (letters, numbers, underscores only)
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    if (!usernameRegex.test(formData.username)) {
+      setError({
+        field: 'username',
+        message: 'Username can only contain letters, numbers, and underscores'
+      });
+      return false;
+    }
+    
+    // Validate password
+    if (formData.password.length < 8) {
+      setError({
+        field: 'password',
+        message: 'Password must be at least 8 characters long'
+      });
+      return false;
+    }
+    
+    // Validate password confirmation
+    if (formData.password !== formData.confirmPassword) {
+      setError({
+        field: 'password',
+        message: 'Passwords do not match'
+      });
+      return false;
+    }
+    
+    return true;
+  };
+  
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    
+    if (!validateForm()) return;
+    
+    setIsLoading(true);
+    try {
+      // Sign up with Supabase
+      const { error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName || '',
+            username: formData.username,
+            display_name: `${formData.firstName} ${formData.lastName || ''}`.trim(),
+            profileComplete: false
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+      
+      if (error) throw error;
+      
+      // Success message - use dynamic import for toast
+      if (isClient) {
+        const { toast } = await import('react-hot-toast');
+        toast.success("Account created! Please check your email to verify your account.");
+      }
+      router.push('/signin');
+      
+    } catch (err: any) {
+      console.error('Sign up error:', err);
+      setError({
+        field: 'general',
+        message: err.message || 'Failed to create account'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleGithubSignUp = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      
+      if (error) throw error;
+    } catch (err: any) {
+      console.error('GitHub sign up error:', err);
+      setError({
+        field: 'general',
+        message: err.message || 'Failed to sign up with GitHub'
+      });
+      setIsLoading(false);
+    }
+  };
+  
+  const handleGoogleSignUp = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      
+      if (error) throw error;
+    } catch (err: any) {
+      console.error('Google sign up error:', err);
+      setError({
+        field: 'general',
+        message: err.message || 'Failed to sign up with Google'
+      });
+      setIsLoading(false);
+    }
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
-      <Navbar />
-      
-      <div className="pt-28 pb-16 px-4">
-        <div className="container mx-auto">
-          <div className="text-center max-w-3xl mx-auto">
-            <motion.h1 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-blue-500 to-pink-500"
-            >
-              Join Neural Nexus
-            </motion.h1>
-            
-            <motion.p 
+    <AuthLayout
+      title="Create Account"
+      subtitle="Join our community and start building amazing things"
+      showBrainAnimation={false}
+      mode="signup"
+    >
+      <div className="bg-white/5 backdrop-blur-md rounded-xl border border-purple-500/10 p-6 md:p-8 shadow-xl">
+        {error && error.field === 'general' && (
+          <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-xl text-gray-300 mb-8"
-            >
-              Create your account to access all features and join our community of AI enthusiasts.
-            </motion.p>
+            className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start"
+          >
+            <AlertCircle className="h-5 w-5 text-red-500 mr-3 mt-0.5 flex-shrink-0" />
+            <p className="text-red-300 text-sm">{error.message}</p>
+          </motion.div>
+        )}
+        
+        <form onSubmit={handleSignUp} className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <Input
+              label="First Name"
+              type="text"
+              name="firstName"
+              value={formData.firstName}
+              onChange={handleInputChange}
+              leftIcon={<User className="h-5 w-5" />}
+              placeholder="Enter your first name"
+              error={error?.field === 'firstName' ? error.message : undefined}
+              required
+              autoComplete="given-name"
+            />
             
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
-            >
-              <button
-                onClick={openSignIn}
-                className="px-8 py-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors flex items-center justify-center"
-              >
-                <LogIn className="mr-2 h-5 w-5" />
-                Sign In
-              </button>
-              
-              <button
-                onClick={openSignUp}
-                className="px-8 py-4 bg-gradient-to-r from-purple-500 to-blue-600 rounded-lg font-medium hover:opacity-90 transition-all transform hover:scale-105 shadow-lg shadow-blue-500/25 flex items-center justify-center"
-              >
-                <UserPlus className="mr-2 h-5 w-5" />
-                Sign Up
-              </button>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-gray-700/50 max-w-2xl mx-auto"
-            >
-              <h2 className="text-2xl font-bold mb-4">Why Join Neural Nexus?</h2>
-              <ul className="space-y-4 text-left">
-                <li className="flex items-start">
-                  <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-full p-1 mr-3 mt-1">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+            <Input
+              label="Last Name"
+              type="text"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleInputChange}
+              leftIcon={<User className="h-5 w-5" />}
+              placeholder="Enter your last name (optional)"
+              autoComplete="family-name"
+            />
+          </div>
+          
+          <Input
+            label="Username"
+            type="text"
+            name="username"
+            value={formData.username}
+            onChange={handleInputChange}
+            leftIcon={<User className="h-5 w-5" />}
+            placeholder="Choose a username"
+            error={error?.field === 'username' ? error.message : undefined}
+            required
+            autoComplete="username"
+          />
+          
+          <Input
+            label="Email"
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            leftIcon={<Mail className="h-5 w-5" />}
+            placeholder="Enter your email"
+            error={error?.field === 'email' ? error.message : undefined}
+            required
+            autoComplete="email"
+          />
+          
+          <Input
+            label="Password"
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleInputChange}
+            leftIcon={<Lock className="h-5 w-5" />}
+            placeholder="Create a password (min. 8 characters)"
+            error={error?.field === 'password' ? error.message : undefined}
+            required
+            autoComplete="new-password"
+          />
+          
+          <Input
+            label="Confirm Password"
+            type="password"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleInputChange}
+            leftIcon={<Lock className="h-5 w-5" />}
+            placeholder="Confirm your password"
+            error={error?.field === 'password' ? error.message : undefined}
+            required
+            autoComplete="new-password"
+          />
+          
+          <div className="flex items-center mt-4">
+            <input
+              type="checkbox"
+              id="terms"
+              name="terms"
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-gray-700 border-gray-600"
+              required
+            />
+            <label htmlFor="terms" className="ml-2 text-sm text-gray-300">
+              I agree to the <Link href="/terms" className="text-blue-400 hover:text-blue-300">Terms of Service</Link> and{' '}
+              <Link href="/privacy" className="text-blue-400 hover:text-blue-300">Privacy Policy</Link>
+            </label>
+          </div>
+          
+          <Button
+            type="submit"
+            variant="primary"
+            className="w-full"
+            isLoading={isLoading}
+          >
+            Create Account
+          </Button>
+        </form>
+        
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-700" />
                   </div>
-                  <div>
-                    <span className="font-medium">Access exclusive AI models</span>
-                    <p className="text-gray-400 text-sm">Browse and use thousands of cutting-edge AI models from our community.</p>
-                  </div>
-                </li>
-                <li className="flex items-start">
-                  <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-full p-1 mr-3 mt-1">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <span className="font-medium">Share your own models</span>
-                    <p className="text-gray-400 text-sm">Upload and monetize your AI innovations with our secure platform.</p>
-                  </div>
-                </li>
-                <li className="flex items-start">
-                  <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-full p-1 mr-3 mt-1">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <span className="font-medium">Join a thriving community</span>
-                    <p className="text-gray-400 text-sm">Connect with like-minded AI enthusiasts and industry experts.</p>
-                  </div>
-                </li>
-              </ul>
-            </motion.div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-gray-900 text-gray-400">
+              Or continue with
+            </span>
           </div>
         </div>
+        
+        <div className="space-y-3">
+          <Button
+            variant="secondary"
+            className="w-full bg-gray-800 hover:bg-gray-700 text-white"
+            leftIcon={<Github className="h-5 w-5" />}
+            onClick={handleGithubSignUp}
+            disabled={isLoading}
+          >
+            Continue with GitHub
+          </Button>
+          
+          <Button
+            variant="secondary"
+            className="w-full bg-gray-800 hover:bg-gray-700 text-white"
+            onClick={handleGoogleSignUp}
+            disabled={isLoading}
+            leftIcon={
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+            }
+          >
+            Continue with Google
+          </Button>
+        </div>
+        
+        <p className="text-center text-sm text-gray-400 mt-8">
+          Already have an account?{' '}
+          <Link
+            href="/signin"
+            className="text-blue-400 hover:text-blue-300 font-medium"
+          >
+            Sign in
+          </Link>
+        </p>
       </div>
-
-      <SignInMenu 
-        isOpen={showSignInMenu} 
-        onClose={() => setShowSignInMenu(false)} 
-        initialMode={authMode}
-      />
-      
-      <Footer />
-    </main>
+    </AuthLayout>
   );
 } 

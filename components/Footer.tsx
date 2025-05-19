@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Brand from './Brand';
 import { Github, Linkedin, Mail } from 'lucide-react';
+import Image from 'next/image';
 
 const Footer = () => {
   const footerLinks = {
@@ -18,11 +19,11 @@ const Footer = () => {
       { label: 'Open Source', href: '/open-source' }
     ],
     community: [
-      { label: 'Showcase', href: '/community' },
+      { label: 'Showcase', href: '/showcase' },
       { label: 'Blog', href: '/blog' },
       { label: 'Tutorials', href: '/tutorials' },
-      { label: 'Discord', href: 'https://discord.gg/neuralnexus' },
-      { label: 'GitHub', href: 'https://github.com/Drago-03/AI-Model-Hub.git' }
+      { label: 'Discord', href: 'https://discord.gg/FrtydvAh', isExternal: true },
+      { label: 'GitHub', href: 'https://github.com/Drago-03/Neural-Nexus', isExternal: true }
     ],
     company: [
       { label: 'About Us', href: '/about' },
@@ -34,7 +35,16 @@ const Footer = () => {
   };
 
   const socialLinks = [
-    { icon: <Github className="w-5 h-5" />, href: 'https://github.com/Drago-03/AI-Model-Hub.git', label: 'GitHub' },
+    { icon: <Github className="w-5 h-5" />, href: 'https://github.com/Drago-03/Neural-Nexus', label: 'GitHub' },
+    { 
+      icon: (
+        <div className="w-5 h-5 relative">
+          <Image src="/images/discord.png" alt="Discord" width={20} height={20} className="object-contain" />
+        </div>
+      ), 
+      href: 'https://discord.gg/FrtydvAh', 
+      label: 'Discord' 
+    },
     { icon: <Linkedin className="w-5 h-5" />, href: 'https://www.linkedin.com/in/mantej-singh-arora/', label: 'LinkedIn' },
     { icon: <Mail className="w-5 h-5" />, href: 'mailto:mantejarora@gmail.com', label: 'Email' }
   ];
@@ -86,9 +96,20 @@ const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.community.map((link, index) => (
                 <li key={index}>
-                  <Link href={link.href} className="text-gray-400 hover:text-white transition-colors">
-                    {link.label}
-                  </Link>
+                  {link.isExternal ? (
+                    <a 
+                      href={link.href} 
+                      className="text-gray-400 hover:text-white transition-colors"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link href={link.href} className="text-gray-400 hover:text-white transition-colors">
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

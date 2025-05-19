@@ -33,22 +33,23 @@ const PricingPage = () => {
 
   const pricingTiers = [
     {
-      name: "Free Tier",
+      name: "Free",
       icon: <Star className="w-10 h-10 text-blue-400" />,
-      description: "Perfect for trying things out",
+      description: "Perfect for getting started",
       monthlyPrice: 0,
       yearlyPrice: 0,
       features: [
-        "Access to public models",
-        "5 API requests per minute",
-        "1GB storage space",
+        "Host unlimited public models, datasets",
+        "Create unlimited orgs with no member limits",
+        "Access the latest ML tools and open source",
         "Community support",
-        "Basic analytics"
+        "5,000 API calls per month",
+        "Basic compute with free CPUs"
       ],
       limitedFeatures: [
-        "No custom model hosting",
         "No private models",
-        "No priority support"
+        "Limited compute resources",
+        "Standard response times"
       ],
       ctaText: "Get Started",
       popular: false
@@ -56,43 +57,45 @@ const PricingPage = () => {
     {
       name: "Pro",
       icon: <Trophy className="w-10 h-10 text-amber-400" />,
-      description: "For serious AI creators",
-      monthlyPrice: 49,
-      yearlyPrice: 470,
+      description: "Unlock advanced features",
+      monthlyPrice: 9,
+      yearlyPrice: 99,
       features: [
         "Everything in Free tier",
-        "Host up to 5 custom models",
-        "60 API requests per minute",
-        "15GB storage space",
-        "Email support",
-        "Advanced analytics",
-        "Private models",
-        "Custom model training"
+        "ZeroGPU and Dev Mode for Spaces",
+        "Free credits across all Inference Providers",
+        "Early access to upcoming features",
+        "Pro badge on your profile",
+        "100,000 API calls per month",
+        "Pay-as-you-go option for additional usage"
       ],
       limitedFeatures: [
         "No enterprise features",
-        "No SLA guarantee"
+        "Standard SLA"
       ],
       ctaText: "Subscribe Now",
       popular: true
     },
     {
-      name: "Enterprise",
+      name: "Enterprise Hub",
       icon: <Building className="w-10 h-10 text-purple-400" />,
-      description: "For teams and businesses",
-      monthlyPrice: null,
-      yearlyPrice: null,
+      description: "Accelerate your AI roadmap",
+      monthlyPrice: 20,
+      yearlyPrice: 200,
       features: [
         "Everything in Pro tier",
-        "Unlimited custom models",
-        "Unlimited API requests",
-        "Dedicated infrastructure",
-        "Custom SLAs",
-        "24/7 priority support",
-        "SSO & team management",
-        "Dedicated account manager",
-        "Custom model training",
-        "On-prem deployment options"
+        "SSO and SAML support",
+        "Select data location with Storage Regions",
+        "Precise actions reviews with Audit logs",
+        "Granular access control with Resource groups",
+        "Centralized token control and approval",
+        "Dataset Viewer for private datasets",
+        "Advanced compute options for Spaces",
+        "5x more ZeroGPU quota for members",
+        "Deploy Inference on your own Infra",
+        "Managed billing with yearly commits",
+        "Priority support",
+        "Unlimited API calls"
       ],
       limitedFeatures: [],
       ctaText: "Contact Sales",
@@ -316,7 +319,7 @@ const PricingPage = () => {
                 </div>
                 
                 <Link 
-                  href={tier.name === "Enterprise" ? "/contact" : "/signup"}
+                  href={tier.name === "Enterprise Hub" ? "/contact" : "/signup"}
                   className={`block w-full py-3 px-4 rounded-lg text-center font-medium transition-all ${
                     tier.popular
                       ? "bg-purple-600 hover:bg-purple-700 text-white"
@@ -430,6 +433,114 @@ const PricingPage = () => {
             </table>
           </div>
         </motion.div>
+
+        {/* Compute Pricing Options */}
+        <section className="mb-16">
+          <h2 className="text-3xl font-bold mb-10 text-center">Additional Computing Options</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Spaces Hardware */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm"
+            >
+              <h3 className="text-xl font-bold mb-2">Spaces Hardware</h3>
+              <p className="text-gray-400 mb-4">Upgrade your Space compute</p>
+              <div className="mb-4">
+                <span className="text-2xl font-bold">$0</span>
+                <span className="text-gray-400">/hour</span>
+              </div>
+              <p className="text-sm text-purple-400 mb-4">Starting at</p>
+              <ul className="space-y-2">
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Free CPUs</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Build more advanced Spaces</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>7 optimized hardware options</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>From CPU to GPU to Accelerators</span>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* Inference Endpoints */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm"
+            >
+              <h3 className="text-xl font-bold mb-2">Inference Endpoints</h3>
+              <p className="text-gray-400 mb-4">Deploy models on fully managed infrastructure</p>
+              <div className="mb-4">
+                <span className="text-2xl font-bold">$0.032</span>
+                <span className="text-gray-400">/hour</span>
+              </div>
+              <p className="text-sm text-purple-400 mb-4">Starting at</p>
+              <ul className="space-y-2">
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Deploy dedicated Endpoints in seconds</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Keep your costs low</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Fully-managed autoscaling</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Enterprise security</span>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* API Usage */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm"
+            >
+              <h3 className="text-xl font-bold mb-2">API Usage</h3>
+              <p className="text-gray-400 mb-4">Pay only for what you use</p>
+              <div className="mb-4">
+                <span className="text-2xl font-bold">$0.001</span>
+                <span className="text-gray-400">/1000 tokens</span>
+              </div>
+              <p className="text-sm text-purple-400 mb-4">Starting at</p>
+              <ul className="space-y-2">
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Ultra low per-token pricing</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Volume discounts available</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>No minimum commitments</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Transparent usage dashboard</span>
+                </li>
+              </ul>
+            </motion.div>
+          </div>
+        </section>
 
         {/* FAQ Section */}
         <motion.div

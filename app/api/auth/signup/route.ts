@@ -7,10 +7,10 @@ export async function POST(req: NextRequest) {
     const { firstName, lastName, email, password, displayName } = await req.json();
     
     // Validate required fields
-    if (!firstName || !lastName || !email || !password) {
+    if (!firstName || !email || !password) {
       return NextResponse.json({ 
         success: false,
-        message: 'Missing required fields' 
+        message: 'First name, email, and password are required' 
       }, { status: 400 });
     }
     
@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
       user: {
         email,
         firstName, 
-        lastName,
-        displayName: displayName || `${firstName} ${lastName}`,
+        lastName: lastName || '',
+        displayName: displayName || (lastName ? `${firstName} ${lastName}` : firstName),
       }
     });
     

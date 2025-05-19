@@ -13,14 +13,29 @@ import {
   ArrowRight,
   Globe,
   Laptop,
-  Home
+  Home,
+  Building,
+  DollarSign,
+  GraduationCap,
+  HeartHandshake,
+  BarChart,
+  PenTool,
+  Binary,
+  Network,
+  Headphones
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import ApplicationModal from "@/components/ApplicationModal";
+import JobListingsModal from "@/components/JobListingsModal";
 
 export default function CareersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterLocation, setFilterLocation] = useState<string | null>(null);
   const [filterDepartment, setFilterDepartment] = useState<string | null>(null);
+  const [jobListingsModalOpen, setJobListingsModalOpen] = useState(false);
+  const [applicationModalOpen, setApplicationModalOpen] = useState(false);
+  const [selectedPosition, setSelectedPosition] = useState<any>(null);
   
   // List of job openings with location information
   const jobOpenings = [
@@ -181,6 +196,326 @@ export default function CareersPage() {
         "Proficiency with SQL and Python",
         "Experience with big data technologies",
         "Understanding of data modeling"
+      ]
+    },
+    {
+      id: 11,
+      title: "Senior Backend Engineer",
+      department: "Engineering",
+      location: "New York, USA",
+      type: "Full-time",
+      remote: false,
+      description: "Design and build scalable backend services that power our AI platform. You'll work on API design, database architecture, and ensuring performance at scale.",
+      requirements: [
+        "5+ years experience in backend development",
+        "Strong knowledge of Node.js, Python, or Go",
+        "Experience with SQL and NoSQL databases",
+        "Understanding of API design and microservices",
+        "Experience with high-throughput systems"
+      ]
+    },
+    {
+      id: 12,
+      title: "AI Ethics Researcher",
+      department: "Research",
+      location: "London, UK",
+      type: "Full-time",
+      remote: false,
+      description: "Help us ensure our AI models and platform are developed and used responsibly. You'll research ethical implications, develop guidelines, and work with teams across the company to implement responsible AI practices.",
+      requirements: [
+        "Advanced degree in ethics, philosophy, AI, or related field",
+        "Understanding of machine learning and AI systems",
+        "Research experience in AI ethics or responsible tech",
+        "Excellent written and verbal communication",
+        "Ability to translate complex ethical concepts into practical guidelines"
+      ]
+    },
+    {
+      id: 13,
+      title: "Growth Marketing Manager",
+      department: "Marketing",
+      location: "Remote",
+      type: "Full-time",
+      remote: true,
+      description: "Drive user acquisition and retention for our platform. You'll develop and execute marketing campaigns, analyze performance, and optimize our growth funnel.",
+      requirements: [
+        "3+ years experience in growth marketing",
+        "Data-driven approach to marketing",
+        "Experience with digital marketing channels",
+        "Knowledge of marketing analytics tools",
+        "Prior experience in tech or AI preferred"
+      ]
+    },
+    {
+      id: 14,
+      title: "Financial Analyst",
+      department: "Finance",
+      location: "Singapore",
+      type: "Full-time",
+      remote: false,
+      description: "Support our financial planning and analysis. You'll create financial models, analyze business performance, and help inform strategic decisions.",
+      requirements: [
+        "Bachelor's degree in Finance, Accounting, or related field",
+        "2+ years experience in financial analysis",
+        "Strong Excel and financial modeling skills",
+        "Experience with financial reporting",
+        "Attention to detail and analytical mindset"
+      ]
+    },
+    {
+      id: 15,
+      title: "HR Specialist",
+      department: "Human Resources",
+      location: "Chandigarh, India",
+      type: "Full-time",
+      remote: false,
+      description: "Support our growing team across all aspects of HR. You'll manage recruitment, onboarding, employee relations, and help maintain our positive company culture.",
+      requirements: [
+        "3+ years experience in HR roles",
+        "Knowledge of HR best practices and employment law",
+        "Experience with HR systems and tools",
+        "Strong interpersonal and communication skills",
+        "Experience in tech companies preferred"
+      ]
+    },
+    {
+      id: 16,
+      title: "Customer Success Manager",
+      department: "Customer Success",
+      location: "Berlin, Germany",
+      type: "Full-time",
+      remote: false,
+      description: "Ensure our customers get maximum value from our platform. You'll onboard new customers, provide ongoing support, and work to increase customer satisfaction and retention.",
+      requirements: [
+        "3+ years experience in customer success or account management",
+        "Strong communication and relationship-building skills",
+        "Experience with CRM tools",
+        "Technical aptitude to understand our platform",
+        "Problem-solving mindset"
+      ]
+    },
+    {
+      id: 17,
+      title: "Legal Counsel",
+      department: "Legal",
+      location: "New York, USA",
+      type: "Full-time",
+      remote: false,
+      description: "Provide legal guidance on a wide range of issues including contracts, compliance, intellectual property, and privacy. You'll help navigate the complex legal landscape of AI technology.",
+      requirements: [
+        "JD degree and bar admission",
+        "3+ years experience in technology law",
+        "Understanding of intellectual property and privacy law",
+        "Experience with contract drafting and negotiation",
+        "Knowledge of AI and data regulations a plus"
+      ]
+    },
+    {
+      id: 18,
+      title: "Content Marketing Specialist",
+      department: "Marketing",
+      location: "Remote",
+      type: "Full-time",
+      remote: true,
+      description: "Create compelling content that educates our audience and drives engagement. You'll produce blog posts, case studies, whitepapers, and other content that showcases our platform and expertise.",
+      requirements: [
+        "2+ years experience in content marketing",
+        "Excellent writing and editing skills",
+        "Ability to explain technical concepts clearly",
+        "Experience with SEO and content strategy",
+        "Familiarity with AI concepts preferred"
+      ]
+    },
+    {
+      id: 19,
+      title: "Sales Development Representative",
+      department: "Sales",
+      location: "San Francisco, USA",
+      type: "Full-time",
+      remote: false,
+      description: "Generate and qualify leads for our sales team. You'll reach out to potential customers, understand their needs, and connect them with our solutions.",
+      requirements: [
+        "1+ years experience in sales or business development",
+        "Strong communication and interpersonal skills",
+        "Excellent follow-up and organization abilities",
+        "Resilient and goal-oriented mindset",
+        "Interest in AI and technology"
+      ]
+    },
+    {
+      id: 20,
+      title: "Enterprise Account Executive",
+      department: "Sales",
+      location: "London, UK",
+      type: "Full-time",
+      remote: false,
+      description: "Drive revenue growth by selling our AI platform to enterprise clients. You'll build relationships with key stakeholders, understand client needs, and close complex deals.",
+      requirements: [
+        "5+ years experience in enterprise software sales",
+        "Track record of exceeding sales quotas",
+        "Experience with solution selling and complex sales cycles",
+        "Strong negotiation and relationship-building skills",
+        "Understanding of AI and machine learning technologies"
+      ]
+    },
+    {
+      id: 21,
+      title: "Mobile App Developer",
+      department: "Engineering",
+      location: "Tokyo, Japan",
+      type: "Full-time",
+      remote: false,
+      description: "Build and maintain our mobile applications for iOS and Android. You'll work on creating a seamless mobile experience for our users to access and interact with AI models.",
+      requirements: [
+        "3+ years experience in mobile development",
+        "Proficiency with React Native or Flutter",
+        "Experience with native iOS or Android development",
+        "Understanding of mobile UX best practices",
+        "Knowledge of RESTful APIs and state management"
+      ]
+    },
+    {
+      id: 22,
+      title: "Security Engineer",
+      department: "Engineering",
+      location: "Remote",
+      type: "Full-time",
+      remote: true,
+      description: "Ensure the security of our platform and protect our users' data. You'll conduct security assessments, implement security controls, and respond to security incidents.",
+      requirements: [
+        "4+ years experience in information security",
+        "Knowledge of security frameworks and best practices",
+        "Experience with security tools and technologies",
+        "Understanding of web application security",
+        "Security certifications (CISSP, CEH, etc.) preferred"
+      ]
+    },
+    {
+      id: 23,
+      title: "Data Scientist",
+      department: "Data Science",
+      location: "Chandigarh, India",
+      type: "Full-time",
+      remote: false,
+      description: "Extract insights from our platform data to inform product and business decisions. You'll build models, analyze trends, and communicate findings to stakeholders.",
+      requirements: [
+        "MS/PhD in Computer Science, Statistics, or related field",
+        "Strong statistical analysis and modeling skills",
+        "Proficiency with Python and data science libraries",
+        "Experience with machine learning and data visualization",
+        "Ability to communicate complex findings clearly"
+      ]
+    },
+    {
+      id: 24,
+      title: "IT Support Specialist",
+      department: "IT",
+      location: "Dublin, Ireland",
+      type: "Full-time",
+      remote: false,
+      description: "Provide technical support to our internal team. You'll troubleshoot hardware and software issues, manage IT infrastructure, and ensure smooth operations.",
+      requirements: [
+        "2+ years experience in IT support",
+        "Knowledge of Windows and Mac operating systems",
+        "Experience with networking and IT security",
+        "Strong problem-solving and communication skills",
+        "IT certifications preferred"
+      ]
+    },
+    {
+      id: 25,
+      title: "QA Engineer",
+      department: "Engineering",
+      location: "Remote",
+      type: "Full-time",
+      remote: true,
+      description: "Ensure the quality of our platform through manual and automated testing. You'll develop test plans, create and execute test cases, and work with developers to resolve issues.",
+      requirements: [
+        "3+ years experience in software QA",
+        "Experience with test automation frameworks",
+        "Knowledge of API testing and web testing",
+        "Strong attention to detail",
+        "Understanding of agile development processes"
+      ]
+    },
+    {
+      id: 26,
+      title: "Project Manager",
+      department: "Product",
+      location: "Toronto, Canada",
+      type: "Full-time",
+      remote: false,
+      description: "Coordinate and drive the execution of product initiatives. You'll manage timelines, resources, and communication to ensure successful delivery of projects.",
+      requirements: [
+        "3+ years experience in project management",
+        "PMP certification or equivalent preferred",
+        "Experience with project management tools",
+        "Strong organizational and communication skills",
+        "Ability to manage multiple priorities simultaneously"
+      ]
+    },
+    {
+      id: 27,
+      title: "Graphic Designer",
+      department: "Design",
+      location: "Remote",
+      type: "Full-time",
+      remote: true,
+      description: "Create visually compelling materials for our brand across digital and print media. You'll design marketing collateral, website graphics, and other visual assets.",
+      requirements: [
+        "3+ years experience in graphic design",
+        "Strong portfolio demonstrating versatile design skills",
+        "Proficiency with Adobe Creative Suite",
+        "Experience with digital and print design",
+        "Understanding of brand guidelines and visual identity"
+      ]
+    },
+    {
+      id: 28,
+      title: "3D Artist",
+      department: "Design",
+      location: "Los Angeles, USA",
+      type: "Full-time",
+      remote: false,
+      description: "Create 3D models and animations for our product visualizations and marketing materials. You'll work on bringing AI concepts to life through engaging visual content.",
+      requirements: [
+        "3+ years experience in 3D modeling and animation",
+        "Proficiency with Blender, Maya, or similar tools",
+        "Strong portfolio of 3D work",
+        "Understanding of lighting, texturing, and rendering",
+        "Experience with motion graphics a plus"
+      ]
+    },
+    {
+      id: 29,
+      title: "Research Scientist - NLP",
+      department: "Research",
+      location: "Remote",
+      type: "Full-time",
+      remote: true,
+      description: "Advance the state of natural language processing through original research. You'll develop new algorithms, publish papers, and help translate research into product features.",
+      requirements: [
+        "PhD in Computer Science, NLP, or related field",
+        "Strong publication record in NLP research",
+        "Experience with large language models",
+        "Proficiency with deep learning frameworks",
+        "Excellent communication and collaborative skills"
+      ]
+    },
+    {
+      id: 30,
+      title: "Research Scientist - Computer Vision",
+      department: "Research",
+      location: "Chandigarh, India",
+      type: "Full-time",
+      remote: false,
+      description: "Push the boundaries of computer vision technology through innovative research. You'll work on developing new visual processing algorithms and techniques.",
+      requirements: [
+        "PhD in Computer Science, Computer Vision, or related field",
+        "Strong publication record in computer vision research",
+        "Experience with image generation and processing models",
+        "Proficiency with PyTorch or TensorFlow",
+        "Ability to implement research prototypes"
       ]
     }
   ];
@@ -351,13 +686,16 @@ export default function CareersPage() {
                       </div>
                       
                       <div className="mt-4 md:mt-0">
-                        <Link 
-                          href={`/careers/${job.id}`}
+                        <button 
+                          onClick={() => {
+                            setSelectedPosition(job);
+                            setApplicationModalOpen(true);
+                          }}
                           className="inline-flex items-center px-5 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
                         >
                           Apply Now
                           <ArrowRight className="ml-1 h-4 w-4" />
-                        </Link>
+                        </button>
                       </div>
                     </div>
                     
@@ -481,8 +819,14 @@ export default function CareersPage() {
             <div className="md:w-1/2 order-2 md:order-1">
               <div className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6">
                 <h3 className="text-xl font-bold mb-4">Our Office in Chandigarh</h3>
-                <div className="aspect-video bg-gray-900/70 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-gray-500">Office Image Placeholder</span>
+                <div className="aspect-video bg-gray-900/70 rounded-lg mb-4 overflow-hidden">
+                  <Image 
+                    src="/images/Chandigarh.png" 
+                    alt="Our Chandigarh Office" 
+                    width={600} 
+                    height={338}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <p className="text-gray-300 mb-4">
                   Located in the heart of Chandigarh, our India office is a vibrant hub of innovation. 
@@ -491,13 +835,16 @@ export default function CareersPage() {
                 </p>
                 
                 <div className="mt-6">
-                  <Link 
-                    href="/careers?filter=India"
+                  <button 
+                    onClick={() => {
+                      setFilterLocation('India');
+                      setJobListingsModalOpen(true);
+                    }}
                     className="inline-flex items-center px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
                   >
                     View Positions in India
                     <ArrowRight className="ml-1 h-4 w-4" />
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>
@@ -543,24 +890,41 @@ export default function CareersPage() {
           <h2 className="text-3xl font-bold mb-4">Ready to Apply?</h2>
           <p className="text-xl text-gray-300 mb-8">
             We're always looking for talented individuals to join our team. Browse our open positions 
-            or send us your resume even if you don't see a perfect fit.
+            or apply directly even if you don't see a perfect fit.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link 
-              href="#top" 
+            <button 
+              onClick={() => setJobListingsModalOpen(true)}
               className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors"
             >
               Browse Open Positions
-            </Link>
-            <a 
-              href="mailto:mantejarora@gmail.com?subject=Job Application" 
+            </button>
+            <button
+              onClick={() => {
+                setSelectedPosition(null);
+                setApplicationModalOpen(true);
+              }}
               className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors"
             >
-              Send Us Your Resume
-            </a>
+              Apply for a Role
+            </button>
           </div>
         </div>
       </section>
+
+      {/* Modals */}
+      <JobListingsModal 
+        isOpen={jobListingsModalOpen}
+        onClose={() => setJobListingsModalOpen(false)}
+        positions={jobOpenings}
+      />
+      
+      <ApplicationModal
+        isOpen={applicationModalOpen}
+        onClose={() => setApplicationModalOpen(false)}
+        selectedPosition={selectedPosition}
+        positions={jobOpenings}
+      />
 
       <Footer />
     </main>

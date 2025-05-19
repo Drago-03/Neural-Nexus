@@ -89,11 +89,10 @@ You waive your right to participate in a class action lawsuit against Neural Nex
       title: "Contact Information",
       content: `If you have any questions about these Terms, please contact us at:
 
-support@neuralnexus.ai
+mantejarora@gmail.com
 
-Neural Nexus, Inc.
-123 AI Plaza
-San Francisco, CA 94105`
+Indie Hub, Inc.
+Chandigarh, India`
     }
   ];
 
@@ -113,7 +112,7 @@ San Francisco, CA 94105`
               Terms of Service
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Last updated: May 20, 2024
+              Last updated: May 16, 2025
             </p>
           </motion.div>
           

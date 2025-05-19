@@ -20,7 +20,7 @@ export default function DiscordPage() {
   // Redirect to Discord after a delay
   useEffect(() => {
     const timer = setTimeout(() => {
-      window.location.href = "https://discord.gg/neuralnexus";
+      window.location.href = "https://discord.gg/FrtydvAh";
     }, 10000); // Redirect after 10 seconds
     
     return () => clearTimeout(timer);
@@ -84,7 +84,7 @@ export default function DiscordPage() {
             </div>
             
             <a 
-              href="https://discord.gg/neuralnexus" 
+              href="https://discord.gg/FrtydvAh" 
               target="_blank" 
               rel="noopener noreferrer"
               className="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 py-3 px-6 rounded-lg transition-colors text-lg font-medium"
@@ -179,7 +179,7 @@ export default function DiscordPage() {
             
             <div className="text-center mt-8">
               <a 
-                href="https://discord.gg/neuralnexus" 
+                href="https://discord.gg/FrtydvAh" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 py-2 px-4 rounded-lg transition-colors"

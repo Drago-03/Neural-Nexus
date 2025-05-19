@@ -30,7 +30,8 @@ export default function BlogPage() {
     { tag: 'tutorials', name: 'Tutorials', emoji: '🧠' },
     { tag: 'announcements', name: 'Announcements', emoji: '📣' },
     { tag: 'case-studies', name: 'Case Studies', emoji: '🔍' },
-    { tag: 'research', name: 'Research', emoji: '🔬' }
+    { tag: 'research', name: 'Research', emoji: '🔬' },
+    { tag: 'open-source', name: 'Open Source', emoji: '🌐', href: '/blog/category/open-source' }
   ];
   
   // Mock blog posts data
@@ -240,18 +241,29 @@ export default function BlogPage() {
             <div className="flex overflow-x-auto hide-scrollbar py-1 w-full sm:w-auto">
               <div className="flex gap-2">
                 {vibeCategories.map(category => (
-                  <button 
-                    key={category.tag}
-                    className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
-                      selectedTag === category.tag || (category.tag === 'all' && !selectedTag)
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-gray-800/70 text-gray-300 hover:bg-gray-700'
-                    }`}
-                    onClick={() => setSelectedTag(category.tag === 'all' ? null : category.tag)}
-                  >
-                    <span className="mr-1">{category.emoji}</span>
-                    {category.name}
-                  </button>
+                  category.href ? (
+                    <Link 
+                      key={category.tag}
+                      href={category.href}
+                      className="px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors bg-gray-800/70 text-gray-300 hover:bg-gray-700"
+                    >
+                      <span className="mr-1">{category.emoji}</span>
+                      {category.name}
+                    </Link>
+                  ) : (
+                    <button 
+                      key={category.tag}
+                      className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
+                        selectedTag === category.tag || (category.tag === 'all' && !selectedTag)
+                          ? 'bg-purple-600 text-white' 
+                          : 'bg-gray-800/70 text-gray-300 hover:bg-gray-700'
+                      }`}
+                      onClick={() => setSelectedTag(category.tag === 'all' ? null : category.tag)}
+                    >
+                      <span className="mr-1">{category.emoji}</span>
+                      {category.name}
+                    </button>
+                  )
                 ))}
               </div>
             </div>

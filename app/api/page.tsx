@@ -1,15 +1,30 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
-import { ChevronDown, Code, Server, Lock, Zap } from "lucide-react";
+import { ChevronDown, Code, Server, Lock, Zap, Check, Key } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
+import { useAppContext } from '@/providers/AppProvider';
 
 export default function APIPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [activeExample, setActiveExample] = useState('authentication');
+  const router = useRouter();
+  const { user } = useAppContext();
+
+  // Handle get API key button click
+  const handleGetApiKey = () => {
+    if (user) {
+      // User is logged in, redirect to dashboard API section
+      router.push('/dashboard?tab=api');
+    } else {
+      // User is not logged in, redirect to login page with redirect back to dashboard API section
+      router.push('/login?redirect=/dashboard?tab=api');
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
@@ -91,6 +106,42 @@ export default function APIPage() {
                       <h3 className="text-lg font-medium mb-2 text-purple-300">Base URL</h3>
                       <div className="bg-gray-900 p-3 rounded-md font-mono text-sm">
                         https://api.neuralnexus.ai/v1
+                      </div>
+                    </div>
+                    
+                    <div className="bg-purple-900/20 border border-purple-900/30 rounded-lg p-6 mt-8">
+                      <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div>
+                          <h3 className="text-xl font-bold mb-2 flex items-center">
+                            <Key className="h-5 w-5 mr-2 text-purple-400" />
+                            Ready to start building?
+                          </h3>
+                          <p className="text-gray-300">
+                            Get your API key now and start integrating Neural Nexus models into your applications.
+                            Our pay-as-you-go pricing ensures you only pay for what you use, starting at just $0.001 per 1000 tokens.
+                          </p>
+                          <ul className="mt-4 space-y-2">
+                            <li className="flex items-start">
+                              <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5" />
+                              <span>Ultra-low pricing with no minimums</span>
+                            </li>
+                            <li className="flex items-start">
+                              <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5" />
+                              <span>Free tier with 5,000 API calls per month</span>
+                            </li>
+                            <li className="flex items-start">
+                              <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5" />
+                              <span>Transparent usage monitoring</span>
+                            </li>
+                          </ul>
+                        </div>
+                        <button
+                          onClick={handleGetApiKey}
+                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg font-medium transition-all transform hover:scale-105 flex items-center flex-shrink-0"
+                        >
+                          <Key className="h-5 w-5 mr-2" />
+                          Get your API key
+                        </button>
                       </div>
                     </div>
                     

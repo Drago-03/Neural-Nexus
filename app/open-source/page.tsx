@@ -277,7 +277,7 @@ export default function OpenSourcePage() {
             className="flex flex-wrap justify-center gap-4"
           >
             <Link 
-              href="https://github.com/neuralnexus"
+              href="https://github.com/Drago-03/Neural-Nexus"
               target="_blank"
               rel="noopener noreferrer" 
               className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors flex items-center"
@@ -605,7 +605,7 @@ export default function OpenSourcePage() {
               </div>
               
               <Link 
-                href="https://github.com/neuralnexus/.github/blob/main/CONTRIBUTING.md"
+                href="https://github.com/Drago-03/Neural-Nexus/blob/main/CONTRIBUTING.md"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-6 inline-flex items-center text-purple-400 hover:text-purple-300"
@@ -873,7 +873,7 @@ export default function OpenSourcePage() {
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link 
-                href="https://github.com/neuralnexus"
+                href="https://github.com/Drago-03/Neural-Nexus"
                 target="_blank"
                 rel="noopener noreferrer" 
                 className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors flex items-center"

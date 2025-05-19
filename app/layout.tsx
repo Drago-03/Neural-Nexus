@@ -1,49 +1,37 @@
+// This file needs to be a server component to export metadata
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
-import dynamic from 'next/dynamic';
-import { Suspense } from 'react';
-
-const inter = Inter({ subsets: ['latin'] });
-
-// Dynamic imports to avoid SSR issues
-const Providers = dynamic(() => import('../providers'), { 
-  ssr: false 
-});
-
-const Toaster = dynamic(() => import('react-hot-toast').then(mod => mod.Toaster), { 
-  ssr: false 
-});
-
-const AgentKitUI = dynamic(() => import('@/components/AgentKitUI'), { 
-  ssr: false 
-});
+import { cn } from '@/lib/utils';
+import { fontSans } from '@/lib/fonts';
+import ClientLayout from './ClientLayout';
+import { AIAgentProvider } from '@/providers/AIAgentProvider';
 
 // Metadata can be exported from a Server Component
 export const metadata: Metadata = {
-  title: 'Neural Nexus – Upload & Monetize AI Models',
-  description: 'The ultimate AI model hub to sell, share, and transfer ownership of your AI creations.',
+  title: 'Neural Nexus - AI for Everyone',
+  description: 'A platform for AI training and neural network experimentation',
   icons: {
     icon: '/animated-logo.gif',
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
+interface RootLayoutProps {
   children: React.ReactNode;
-}>) {
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body className={inter.className}>
-        <Suspense fallback={<div>Loading app...</div>}>
-          <Providers>
-            {children}
-            <Toaster position="top-center" />
-            <AgentKitUI />
-          </Providers>
-        </Suspense>
+      <body
+        className={cn(
+          'min-h-screen bg-background font-sans antialiased',
+          fontSans.variable
+        )}
+      >
+        <AIAgentProvider>
+          <ClientLayout>{children}</ClientLayout>
+        </AIAgentProvider>
       </body>
     </html>
   );

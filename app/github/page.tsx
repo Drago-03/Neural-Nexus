@@ -22,7 +22,7 @@ export default function GitHubPage() {
   // Redirect to GitHub after a delay
   useEffect(() => {
     const timer = setTimeout(() => {
-      window.location.href = "https://github.com/neuralnexus/platform";
+      window.location.href = "https://github.com/Drago-03/Neural-Nexus";
     }, 10000); // Redirect after 10 seconds
     
     return () => clearTimeout(timer);
@@ -95,7 +95,7 @@ export default function GitHubPage() {
             </div>
             
             <a 
-              href="https://github.com/neuralnexus/platform" 
+              href="https://github.com/Drago-03/Neural-Nexus" 
               target="_blank" 
               rel="noopener noreferrer"
               className="inline-flex items-center bg-gray-800 hover:bg-gray-700 py-3 px-6 rounded-lg transition-colors text-lg font-medium"
@@ -118,7 +118,7 @@ export default function GitHubPage() {
                   <Github className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold mb-1">neuralnexus/platform</h2>
+                  <h2 className="text-xl font-bold mb-1">Drago-03/Neural-Nexus</h2>
                   <p className="text-gray-400 text-sm">
                     Open source AI model marketplace and hosting platform
                   </p>
@@ -190,7 +190,7 @@ export default function GitHubPage() {
                       </div>
                       
                       <a 
-                        href={`https://github.com/neuralnexus/${project.name}`} 
+                        href={`https://github.com/Drago-03/Neural-Nexus`} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-blue-400 hover:text-blue-300 text-sm flex items-center"
@@ -239,7 +239,7 @@ export default function GitHubPage() {
               
               <div className="flex flex-wrap justify-center gap-4">
                 <a 
-                  href="https://github.com/neuralnexus/platform" 
+                  href="https://github.com/Drago-03/Neural-Nexus" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="px-5 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors flex items-center"

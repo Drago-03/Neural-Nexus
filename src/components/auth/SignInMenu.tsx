@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Github, Mail, Lock, X, AlertCircle, User, Wallet } from 'lucide-react';
+import { Github, Mail, Lock, X, AlertCircle, User } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 // Import Supabase auth functions
 import { signUpWithSupabase, signInWithSupabase } from '@/lib/supabase';
 import supabase from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { useSupabase } from '@/providers/SupabaseProvider';
 
 interface SignInMenuProps {
   isOpen: boolean;
@@ -13,7 +16,7 @@ interface SignInMenuProps {
 }
 
 interface AuthError {
-  type: 'email' | 'password' | 'firstName' | 'lastName' | 'general';
+  type: 'email' | 'password' | 'firstName' | 'lastName' | 'username' | 'general';
   message: string;
 }
 
@@ -22,12 +25,15 @@ export function SignInMenu({ isOpen, onClose, initialMode = 'signin' }: SignInMe
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<AuthError | null>(null);
+  const router = useRouter();
+  const { supabase } = useSupabase();
 
   // Update when initialMode changes from parent
   useEffect(() => {
@@ -47,46 +53,68 @@ export function SignInMenu({ isOpen, onClose, initialMode = 'signin' }: SignInMe
   };
 
   const validateForm = () => {
+    // Reset previous errors
+    setError(null);
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError({
+        type: 'email',
+        message: 'Please enter a valid email address'
+      });
+      return false;
+    }
+    
+    // Validate password
+    if (formData.password.length < 8) {
+      setError({
+        type: 'password',
+        message: 'Password must be at least 8 characters long'
+      });
+      return false;
+    }
+    
+    // Additional signup validation
     if (!isSignIn) {
       // Validate first name
       if (!formData.firstName.trim()) {
-        setError({ type: 'firstName', message: 'First name is required' });
+        setError({
+          type: 'firstName',
+          message: 'First name is required'
+        });
         return false;
       }
       
-      // Validate last name
-      if (!formData.lastName.trim()) {
-        setError({ type: 'lastName', message: 'Last name is required' });
+      // Validate username
+      if (!formData.username.trim()) {
+        setError({
+          type: 'username',
+          message: 'Username is required'
+        });
+        return false;
+      }
+      
+      // Username format validation (letters, numbers, underscores only)
+      const usernameRegex = /^[a-zA-Z0-9_]+$/;
+      if (!usernameRegex.test(formData.username)) {
+        setError({
+          type: 'username',
+          message: 'Username can only contain letters, numbers, and underscores'
+        });
+        return false;
+      }
+      
+      // Validate password confirmation
+      if (formData.password !== formData.confirmPassword) {
+        setError({
+          type: 'password',
+          message: 'Passwords do not match'
+        });
         return false;
       }
     }
-
-    // Email validation
-    if (!formData.email) {
-      setError({ type: 'email', message: 'Email is required' });
-      return false;
-    }
-    if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      setError({ type: 'email', message: 'Please enter a valid email address' });
-      return false;
-    }
-
-    // Password validation
-    if (!formData.password) {
-      setError({ type: 'password', message: 'Password is required' });
-      return false;
-    }
-    if (formData.password.length < 6) {
-      setError({ type: 'password', message: 'Password must be at least 6 characters' });
-      return false;
-    }
-
-    // Confirm password validation for sign up
-    if (!isSignIn && formData.password !== formData.confirmPassword) {
-      setError({ type: 'password', message: 'Passwords do not match' });
-      return false;
-    }
-
+    
     return true;
   };
 
@@ -99,39 +127,60 @@ export function SignInMenu({ isOpen, onClose, initialMode = 'signin' }: SignInMe
     setIsLoading(true);
     try {
       if (isSignIn) {
-        // Sign In logic - use Supabase
-        const result = await signInWithSupabase(formData.email, formData.password);
-        if (result.success) {
-          console.log('Signed in successfully:', result.user);
-          onClose();
+        // Sign in directly with Supabase
+        const response = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password
+        });
+
+        if (response.error) throw response.error;
+        
+        if (response.data.user) {
+          console.log('Signed in successfully:', response.data.user);
+          toast.success("You've been signed in successfully.");
+          router.push('/dashboard'); // Redirect to dashboard
         } else {
-          throw new Error(result.error || 'Failed to sign in');
+          throw new Error('Failed to sign in');
         }
       } else {
-        // Sign Up logic with Supabase
-        const result = await signUpWithSupabase(
-          formData.email, 
-          formData.password,
-          {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            display_name: `${formData.firstName} ${formData.lastName}`
+        // Sign up directly with Supabase
+        const response = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              first_name: formData.firstName,
+              last_name: formData.lastName || '',
+              username: formData.username,
+              display_name: `${formData.firstName} ${formData.lastName || ''}`.trim(),
+              profileComplete: false
+            }
           }
-        );
+        });
+
+        if (response.error) throw response.error;
         
-        if (result.success) {
-          console.log('Account created successfully:', result.user);
-          onClose();
+        if (response.data.user) {
+          console.log('Account created successfully:', response.data.user);
+          // For auto-confirmed email flows
+          if (response.data.session) {
+            toast.success("You've been signed in successfully.");
+            router.push('/dashboard'); // Redirect to dashboard if session exists
+          } else {
+            // For email confirmation flows
+            toast.success("Please check your email to verify your account before signing in.");
+            onClose();
+          }
         } else {
-          throw new Error(result.error || 'Failed to create account');
+          throw new Error('Failed to create account');
         }
       }
     } catch (err: any) {
+      console.error('Authentication error:', err);
       setError({
         type: 'general',
         message: err.message || 'An error occurred during authentication'
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -139,22 +188,27 @@ export function SignInMenu({ isOpen, onClose, initialMode = 'signin' }: SignInMe
   const handleGithubLogin = async () => {
     setIsLoading(true);
     try {
-      // Use OAuth with Supabase instead
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
       
-      if (error) throw error;
-      
-      if (data) {
-        console.log('GitHub login initiated');
-        // Will redirect to GitHub
+      if (error) {
+        console.error("GitHub login error:", error);
+        setError({
+          type: 'general',
+          message: error.message || "Failed to sign in with GitHub"
+        });
       }
     } catch (error: any) {
+      console.error("GitHub auth error:", error);
       setError({
         type: 'general',
-        message: error.message || 'Failed to login with GitHub'
+        message: error.message || "An unexpected error occurred"
       });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -162,39 +216,25 @@ export function SignInMenu({ isOpen, onClose, initialMode = 'signin' }: SignInMe
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      // Use OAuth with Supabase instead
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
       
-      if (error) throw error;
-      
-      if (data) {
-        console.log('Google login initiated');
-        // Will redirect to Google
+      if (error) {
+        console.error("Google login error:", error);
+        setError({
+          type: 'general',
+          message: error.message || "Failed to sign in with Google"
+        });
       }
     } catch (error: any) {
+      console.error("Google auth error:", error);
       setError({
         type: 'general',
-        message: error.message || 'Failed to login with Google'
-      });
-      setIsLoading(false);
-    }
-  };
-
-  const handleTonkeeperLogin = async () => {
-    setError(null);
-    setIsLoading(true);
-    try {
-      // Using SimpleCryptoProvider instead of TonConnect
-      setError({
-        type: 'general',
-        message: 'Wallet connection is now available through the navbar using SimpleCryptoProvider'
-      });
-    } catch (err) {
-      setError({
-        type: 'general',
-        message: 'Wallet connection failed'
+        message: error.message || "An unexpected error occurred"
       });
     } finally {
       setIsLoading(false);
@@ -258,8 +298,19 @@ export function SignInMenu({ isOpen, onClose, initialMode = 'signin' }: SignInMe
                     value={formData.lastName}
                     onChange={handleInputChange}
                     leftIcon={<User className="h-5 w-5" />}
-                    placeholder="Enter your last name"
+                    placeholder="Enter your last name (optional)"
                     error={error?.type === 'lastName' ? error.message : undefined}
+                  />
+
+                  <Input
+                    label="Username"
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    leftIcon={<User className="h-5 w-5" />}
+                    placeholder="Choose a username"
+                    error={error?.type === 'username' ? error.message : undefined}
                     required
                   />
                 </>
@@ -369,15 +420,6 @@ export function SignInMenu({ isOpen, onClose, initialMode = 'signin' }: SignInMe
                 }
               >
                 Continue with Google
-              </Button>
-
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={handleTonkeeperLogin}
-                leftIcon={<Wallet className="h-5 w-5" />}
-              >
-                Connect Tonkeeper
               </Button>
             </div>
 

@@ -1,12 +1,14 @@
 "use client";
 
+import { Suspense } from 'react';
 import Navbar from '@/components/Navbar';
 import LeaderboardSection from '@/components/LeaderboardSection';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
 import SpaceBackground from '@/components/SpaceBackground';
+import { Web3Provider } from '@/providers/Web3Provider';
 
-export default function LeaderboardPage() {
+function LeaderboardContent() {
   return (
     <div className="min-h-screen bg-black text-white relative">
       <SpaceBackground />
@@ -104,5 +106,34 @@ export default function LeaderboardPage() {
       
       <Footer />
     </div>
+  );
+}
+
+// Fallback loading UI for Suspense
+function LeaderboardFallback() {
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <Navbar />
+      
+      <main className="pt-24 pb-16 container mx-auto px-4">
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <h2 className="text-2xl font-bold">Loading Leaderboard...</h2>
+          <p className="text-gray-400 mt-2">Fetching the latest community stats and achievements</p>
+        </div>
+      </main>
+      
+      <Footer />
+    </div>
+  );
+}
+
+export default function LeaderboardPage() {
+  return (
+    <Web3Provider>
+      <Suspense fallback={<LeaderboardFallback />}>
+        <LeaderboardContent />
+      </Suspense>
+    </Web3Provider>
   );
 } 

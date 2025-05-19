@@ -5,8 +5,32 @@ import { useAppStore } from '@/lib/store';
 import { AppUser, AppState } from '@/lib/store';
 import type { Auth, User as FirebaseUser } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import { useWeb3 } from '@/providers/Web3Provider';
+// import { useWeb3 } from '@/providers/Web3Provider';
 import AuthProvider from './AuthProvider';
+
+// Mock implementation of the Web3 context
+const mockWeb3Context = {
+  isConnected: false,
+  account: null,
+  balance: null,
+  chainId: null,
+  connectWallet: async () => false,
+  disconnectWallet: async () => false,
+  isWeb3Enabled: false,
+  toggleWeb3Features: () => {},
+  isNFTMintingEnabled: false,
+  isIPFSStorageEnabled: false,
+  toggleNFTMinting: () => {},
+  toggleIPFSStorage: () => {},
+  mintNFT: async () => null,
+  uploadToIPFS: async () => null,
+  userBadges: [],
+  cryptoEarnings: 0,
+  showCryptoEarnings: false,
+  toggleCryptoEarnings: () => {},
+  provider: null,
+  signer: null
+};
 
 // Define types for our minimal placeholder implementations
 interface DocRef {
@@ -66,6 +90,22 @@ interface AppContextProps {
   connectWallet: (address: string) => void;
   disconnectWallet: () => void;
   toggleTheme: () => void;
+  signOut: () => Promise<void>;
+  // Add web3 properties directly to avoid dependency on Web3Provider
+  walletBalance: string | null;
+  chainId: number | null;
+  userBadges: string[];
+  cryptoEarnings: number;
+  showCryptoEarnings: boolean;
+  toggleCryptoEarnings: () => void;
+  isWeb3Enabled: boolean;
+  toggleWeb3Features: () => void;
+  isNFTMintingEnabled: boolean;
+  toggleNFTMinting: () => void;
+  isIPFSStorageEnabled: boolean;
+  toggleIPFSStorage: () => void;
+  mintNFT: (tokenURI: string) => Promise<string | null>;
+  uploadToIPFS: (file: File) => Promise<string | null>;
 }
 
 const AppContext = createContext<AppContextProps>({
@@ -78,38 +118,33 @@ const AppContext = createContext<AppContextProps>({
   connectWallet: () => {},
   disconnectWallet: () => {},
   toggleTheme: () => {},
+  signOut: async () => {},
+  // Add mock values for web3 properties
+  walletBalance: null,
+  chainId: null,
+  userBadges: [],
+  cryptoEarnings: 0,
+  showCryptoEarnings: false,
+  toggleCryptoEarnings: () => {},
+  isWeb3Enabled: false,
+  toggleWeb3Features: () => {},
+  isNFTMintingEnabled: false,
+  toggleNFTMinting: () => {},
+  isIPFSStorageEnabled: false,
+  toggleIPFSStorage: () => {},
+  mintNFT: async () => null,
+  uploadToIPFS: async () => null,
 });
 
 export const useAppContext = () => {
   const appContext = useContext(AppContext);
-  const web3Context = useWeb3();
   
   if (!appContext) {
     throw new Error('useAppContext must be used within an AppProvider');
   }
   
-  // Combine contexts
-  return {
-    ...appContext,
-    isWalletConnected: web3Context.isConnected,
-    walletAddress: web3Context.account,
-    walletBalance: web3Context.balance,
-    chainId: web3Context.chainId,
-    connectWallet: web3Context.connectWallet,
-    disconnectWallet: web3Context.disconnectWallet,
-    userBadges: web3Context.userBadges,
-    cryptoEarnings: web3Context.cryptoEarnings,
-    showCryptoEarnings: web3Context.showCryptoEarnings,
-    toggleCryptoEarnings: web3Context.toggleCryptoEarnings,
-    isWeb3Enabled: web3Context.isWeb3Enabled,
-    toggleWeb3Features: web3Context.toggleWeb3Features,
-    isNFTMintingEnabled: web3Context.isNFTMintingEnabled,
-    toggleNFTMinting: web3Context.toggleNFTMinting,
-    isIPFSStorageEnabled: web3Context.isIPFSStorageEnabled,
-    toggleIPFSStorage: web3Context.toggleIPFSStorage,
-    mintNFT: web3Context.mintNFT,
-    uploadToIPFS: web3Context.uploadToIPFS
-  };
+  // Use context directly without combining with Web3
+  return appContext;
 };
 
 export default function AppProvider({ children }: { children: ReactNode }) {
@@ -236,17 +271,44 @@ export default function AppProvider({ children }: { children: ReactNode }) {
     }
   };
   
-  // Add Web3 integration
+  // Implement signOut method
+  const signOut = async () => {
+    try {
+      await auth.signOut();
+      // Disconnect wallet if connected
+      disconnectWallet();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+  
+  // Add Web3 mock values to context
   const appContextValue = {
     user,
     appUser,
     loading,
-    isWalletConnected: false,  // This will be overridden by the wrapped provider
-    walletAddress: null,
+    isWalletConnected: mockWeb3Context.isConnected,
+    walletAddress: mockWeb3Context.account,
+    walletBalance: mockWeb3Context.balance,
+    chainId: mockWeb3Context.chainId,
     theme,
     connectWallet,
     disconnectWallet,
     toggleTheme,
+    signOut,
+    // Add mock web3 functionality
+    userBadges: mockWeb3Context.userBadges,
+    cryptoEarnings: mockWeb3Context.cryptoEarnings,
+    showCryptoEarnings: mockWeb3Context.showCryptoEarnings,
+    toggleCryptoEarnings: mockWeb3Context.toggleCryptoEarnings,
+    isWeb3Enabled: mockWeb3Context.isWeb3Enabled,
+    toggleWeb3Features: mockWeb3Context.toggleWeb3Features,
+    isNFTMintingEnabled: mockWeb3Context.isNFTMintingEnabled,
+    toggleNFTMinting: mockWeb3Context.toggleNFTMinting,
+    isIPFSStorageEnabled: mockWeb3Context.isIPFSStorageEnabled,
+    toggleIPFSStorage: mockWeb3Context.toggleIPFSStorage,
+    mintNFT: mockWeb3Context.mintNFT,
+    uploadToIPFS: mockWeb3Context.uploadToIPFS
   };
 
   return (

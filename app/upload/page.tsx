@@ -50,7 +50,7 @@ export default function UploadPage() {
     setSelectedFiles(selectedFiles.filter(file => file !== fileToRemove));
   };
 
-  // Start the upload process - simulated for demo
+  // Start the upload process - using real API endpoint
   const sendItUp = async () => {
     // Basic validation
     if (!modelName) {
@@ -66,32 +66,64 @@ export default function UploadPage() {
     // Clear any previous errors
     setVibeCheck([]);
     
-    // Start upload simulation
+    // Start upload process
     setUploadStatus('uploading');
     
-    // Simulate upload progress
-    const fakeUpload = () => {
+    try {
+      // This is a placeholder for actual file upload to Supabase Storage
+      // In a real app, you would upload files to storage and get URLs
+      const fileUrls = [];
       let progress = 0;
-      const interval = setInterval(() => {
-        progress += Math.random() * 10;
-        if (progress >= 100) {
-          progress = 100;
-          clearInterval(interval);
-          setUploadProgress(100);
-          
-          // 10% chance of error for demo purposes
-          if (Math.random() < 0.1) {
-            setUploadStatus('error');
-            setVibeCheck([...vibeCheck, "Server said 'nah' to your upload. Try again?"]);
-          } else {
-            setUploadStatus('success');
-          }
-        }
+      
+      // Simulate file upload progress for now
+      for (const file of selectedFiles) {
+        progress += (100 / selectedFiles.length);
         setUploadProgress(progress);
-      }, 500);
-    };
-    
-    fakeUpload();
+        // TODO: Implement actual file upload to Supabase Storage
+        fileUrls.push('placeholder-url/' + file.name);
+      }
+      
+      // Get user ID from auth - this is a placeholder
+      // In a real app, you would get this from your auth context
+      const userId = 'placeholder-user-id';
+      
+      // Send model data to API endpoint
+      const response = await fetch('/api/models', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          name: modelName,
+          description: modelDescription,
+          category: modelType,
+          file_url: fileUrls[0], // Using first file as main URL for simplicity
+          file_path: fileUrls[0],
+          file_size: selectedFiles[0]?.size || 0,
+          file_type: selectedFiles[0]?.type || 'unknown',
+          thumbnail_url: '', // TODO: Generate thumbnail
+          is_public: true
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API returned status ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setUploadStatus('success');
+        setUploadProgress(100);
+      } else {
+        throw new Error(result.message || 'Upload failed');
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      setUploadStatus('error');
+      setVibeCheck([...vibeCheck, error.message || "Server said 'nah' to your upload. Try again?"]);
+    }
   };
 
   return (

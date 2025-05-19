@@ -73,8 +73,21 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
       - Go to Authentication > Providers
       - Enable Email, Google, GitHub, etc. as needed
       - Configure OAuth credentials for third-party providers
+      - **For GitHub OAuth**: 
+        - Go to your GitHub account > Settings > Developer settings > OAuth Apps > New OAuth App
+        - Set the callback URL to exactly: `https://[YOUR-PROJECT-REF].supabase.co/auth/v1/callback`
+        - Copy the Client ID and Client Secret to Supabase GitHub provider settings
+        - It's critical that the callback URL matches exactly what Supabase expects
+      - **For Google OAuth**:
+        - Set the callback URL to exactly: `https://[YOUR-PROJECT-REF].supabase.co/auth/v1/callback`
+        - Make sure to add the same domain to your authorized redirect URIs
+      
+   e. Enable anonymous authentication:
+      - Go to Authentication > Providers
+      - Scroll down to "Anonymous Sign-in" and toggle it on
+      - This allows users to try the platform without creating an account
    
-   e. Set up storage buckets:
+   f. Set up storage buckets:
       - Go to Storage
       - Create buckets for: `models`, `avatars`, `thumbnails`
       - Set RLS policies for each bucket
@@ -252,9 +265,179 @@ These docs are here to ensure we're all on the same page, building a safe and cr
 Got ideas to make this even more lit? Drop a PR or issue. Let's build this together! 💡
 
 ### **Contributors**
-- **Mantej Singh** - Project Lead & Developer 🚀
-- **Fatima Kachhi** - Project Developer 🚀
+
+Thanks to all our awesome contributors who are helping build Neural Nexus! 🔥
+
+<a href="https://github.com/Drago-03/Neural-Nexus/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Drago-03/Neural-Nexus" />
+</a>
 
 ## License
 
 © 2025 Indie Hub. All rights reserved. Keep it real, fam! ✌️
+
+## Build Instructions
+
+When building the project for production, you might encounter "document is not defined" errors for authentication pages. This is a common issue with Next.js when client-side features are used during static site generation.
+
+To solve this issue, use our custom build and start scripts:
+
+```bash
+# Step 1: Use our custom build script that patches the auth pages
+npm run custom-build
+
+# Step 2: Start the application using our custom server
+npm run custom-start
+```
+
+Our custom build script (`build-with-cleanup.sh`) handles the following:
+1. Cleans up previous build artifacts
+2. Runs the Next.js build process
+3. If auth page errors occur, it patches the build by:
+   - Creating fallback static HTML files for problematic routes
+   - Copying these files to the appropriate output directories
+
+The custom server (`dev-server.js`) then:
+1. Serves the static HTML fallbacks for auth routes
+2. Handles all other requests normally through Next.js
+
+This approach ensures that authentication pages work correctly in production without the "document is not defined" errors.
+
+## Build Instructions for Auth Pages
+
+Next.js has challenges with client-side authentication pages during static site generation, often resulting in "document is not defined" errors. This project includes special handling to resolve these issues:
+
+### Using the Custom Build Process
+
+```bash
+# Run the custom build script that handles auth page issues
+npm run custom-build
+```
+
+This script:
+1. Cleans previous build artifacts
+2. Creates static HTML fallbacks for auth pages if needed
+3. Runs the build with proper environment variables
+4. Patches the generated files to ensure auth pages work correctly
+
+### Using the Custom Server
+
+After building the project, start it with:
+
+```bash
+# Start the custom server that handles auth pages
+npm run custom-start
+```
+
+This custom server serves static HTML fallbacks for authentication pages, preventing issues with client-side code during the initial page load.
+
+### How It Works
+
+The solution uses multiple techniques:
+- Middleware detection for build vs. runtime environments
+- Static HTML fallbacks for auth pages
+- Custom server for serving static content
+- Next.js configuration to properly handle client-only pages
+
+If you modify auth-related pages, ensure the build process is aware of these pages by updating the configuration in:
+- `middleware.ts`
+- `next.config.js`
+- `build-with-cleanup.sh`
+
+## Overview
+Neural Nexus is a powerful platform for AI model deployment, collaboration, and marketplace. It integrates modern web technologies with AI capabilities to provide a seamless experience for researchers, developers, and users.
+
+## Key Features
+- 🧠 AI model marketplace and deployment
+- 🔒 Secure authentication with multiple providers
+- 💰 Payment processing with Stripe and Web3
+- 📊 Advanced analytics dashboard
+- 🚀 Fast, modern UI built with Next.js and Tailwind CSS
+
+## Tech Stack
+- **Frontend**: Next.js, React, Tailwind CSS
+- **Authentication**: Supabase Auth, NextAuth.js
+- **Database**: Supabase PostgreSQL
+- **Payment**: Stripe, Coinbase SDK
+- **Deployment**: Vercel/Netlify compatible
+
+## Getting Started
+
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/neural-nexus.git
+cd neural-nexus
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your credentials
+
+# Start development server
+npm run dev
+```
+
+### Build Instructions
+
+When building the project for production, you might encounter "document is not defined" errors for authentication pages. This is a common issue with Next.js when client-side features are used during static site generation.
+
+For the best production build experience, use our custom build scripts:
+
+```bash
+# Standard build with patching
+npm run build
+
+# OR for a more thorough approach with cleanup
+npm run custom-build
+```
+
+The build process includes:
+1. Pre-build preparation of static HTML fallbacks
+2. The main Next.js build
+3. Post-build patching to ensure all files are present
+
+### Running in Production
+
+```bash
+# Standard Next.js server
+npm run start
+
+# Custom server with enhanced handling of auth pages
+npm run custom-start
+```
+
+## Troubleshooting Common Issues
+
+### "document is not defined" Errors
+These errors occur during server-side rendering of pages that use client-side browser objects. Our build process automatically handles this by:
+1. Using static HTML fallbacks for auth pages
+2. Patching build artifacts post-build
+3. Setting proper runtime configurations
+
+### Edge Runtime Configuration
+We use the experimental edge runtime for authentication pages. If you encounter issues:
+```bash
+# Check that your next.config.js has the correct settings
+# Ensure each auth page exports the runtime configuration
+export const runtime = "experimental-edge";
+```
+
+### Missing Build Artifacts
+If your deployment is missing critical files:
+```bash
+# Run the patch script manually
+node ./scripts/patch-build.js
+```
+
+## Contributing
+Contributions are welcome! Please check out our [Contributing Guide](CONTRIBUTING.md) for details.
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

@@ -271,7 +271,7 @@ export const signInWithGoogle = async () => {
     return {
       uid: "demo-user-123",
       displayName: "Demo User",
-      email: "demo@example.com",
+      email: "mantejarora@gmail.com",
       photoURL: "/default-avatar.png",
     } as unknown as FirebaseUser;
   }

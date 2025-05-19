@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Eye, Download, Star, TrendingUp, Activity, Clock, Filter, ChevronDown, MoreHorizontal, Search, Plus } from 'lucide-react';
+import { AnimatedButton } from './ui/animated-button';
+import { AnimatedCard } from './ui/animated-card';
 import { Button } from '@/components/ui/button';
 
 interface PerformanceMetric {

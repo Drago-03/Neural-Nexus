@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedCard } from './ui/animated-card';
 import { AnimatedButton } from './ui/animated-button';
@@ -23,11 +23,25 @@ type LeaderboardUser = {
 type SortField = 'cryptoEarned' | 'modelsSold' | 'contributions' | 'testingFeedback';
 
 export default function LeaderboardSection() {
-  const { isWeb3Enabled, showCryptoEarnings, toggleCryptoEarnings } = useWeb3();
+  const [mounted, setMounted] = useState(false);
   const [sortBy, setSortBy] = useState<SortField>('cryptoEarned');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [filterActive, setFilterActive] = useState(false);
   const [showMoreUsers, setShowMoreUsers] = useState(false);
+  
+  // Only access the Web3Provider when component is mounted
+  const web3Context = mounted ? useWeb3() : { 
+    isWeb3Enabled: false, 
+    showCryptoEarnings: true, 
+    toggleCryptoEarnings: () => {} 
+  };
+  
+  const { isWeb3Enabled, showCryptoEarnings, toggleCryptoEarnings } = web3Context;
+  
+  // Set mounted state after component mounts
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // Mock data for the leaderboard
   const mockLeaderboard: LeaderboardUser[] = [
@@ -156,6 +170,19 @@ export default function LeaderboardSection() {
     
     return badgeColors[badge] || 'bg-gray-900/40 border-gray-500/30 text-gray-400';
   };
+  
+  // If not mounted yet (server rendering), show a placeholder
+  if (!mounted) {
+    return (
+      <section className="py-16 px-4 relative">
+        <div className="container mx-auto">
+          <div className="flex justify-center">
+            <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
   
   return (
     <section className="py-16 px-4 relative">

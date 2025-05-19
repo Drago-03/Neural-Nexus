@@ -2,7 +2,7 @@
 
 import { ReactNode, useState, useEffect, Component } from 'react';
 import AppProvider from './AppProvider';
-import { Web3Provider } from './Web3Provider';
+// import { Web3Provider } from './Web3Provider';
 import { SimpleCryptoProvider } from './SimpleCryptoProvider';
 import dynamic from 'next/dynamic';
 
@@ -80,13 +80,11 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary>
       <AppProvider>
-        <Web3Provider>
-          <SimpleCryptoProvider>
-            <CoinbaseAgentClient>
-              {children}
-            </CoinbaseAgentClient>
-          </SimpleCryptoProvider>
-        </Web3Provider>
+        <SimpleCryptoProvider>
+          <CoinbaseAgentClient>
+            {children}
+          </CoinbaseAgentClient>
+        </SimpleCryptoProvider>
       </AppProvider>
     </ErrorBoundary>
   );

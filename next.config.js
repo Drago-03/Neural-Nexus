@@ -3,83 +3,115 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    domains: [
-      "images.unsplash.com",
-      "firebasestorage.googleapis.com",
-      "lh3.googleusercontent.com",
-      "localhost",
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+        port: '',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.arweave.net',
+        port: '',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.ipfs.nftstorage.link',
+        port: '',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.ipfs.w3s.link',
+        port: '',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.ipfs.dweb.link',
+        port: '',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.cloudinary.com',
+        port: '',
+      },
     ],
-    unoptimized: true,
   },
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
+    // Don't run ESLint during build for speed
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has type errors.
+    // Don't run TS checking during build for speed
     ignoreBuildErrors: true,
   },
-  // Experimental features
+  // Move these out of experimental as per warning
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
   experimental: {
-    // Disable CSS optimization to prevent critters-related errors
     optimizeCss: false,
-    // Server Actions are available by default now
+    // These settings help with client-side only pages
+    serverActions: {
+      allowedOrigins: ['localhost:3000', '127.0.0.1:3000'],
+    },
   },
-  // Create a static fallback for client-only pages to prevent SSR issues
-  async rewrites() {
-    return {
-      beforeFiles: [
-        // Handle signup page
-        {
-          source: '/signup',
-          destination: '/signup-static.html',
-          has: [
-            {
-              type: 'header',
-              key: 'x-is-build',
-            },
-          ],
-        },
-        // Handle marketplace page
-        {
-          source: '/marketplace',
-          destination: '/marketplace.html',
-          has: [
-            {
-              type: 'header',
-              key: 'x-client-route',
-            },
-          ],
-        },
-        // Handle upload page
-        {
-          source: '/upload',
-          destination: '/upload.html',
-          has: [
-            {
-              type: 'header',
-              key: 'x-client-route',
-            },
-          ],
-        },
-      ],
-    };
+  // Function to generate a custom build ID for consistent builds
+  generateBuildId: async () => {
+    return "neural-nexus-build"
   },
-  // Prevent multiple header setting issues
-  headers: async () => {
+  // Handle static HTML files for authentication pages
+  rewrites() {
     return [
       {
-        source: '/(.*)',
+        source: '/signin',
+        destination: '/signin-static.html',
+      },
+      {
+        source: '/signup',
+        destination: '/signup-static.html',
+      },
+      {
+        source: '/auth/callback',
+        destination: '/auth-callback-static.html',
+      },
+    ]
+  },
+  // Mark client-side rendering pages
+  async headers() {
+    return [
+      {
+        source: '/(signin|signup|auth/callback)',
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=0, must-revalidate',
+            key: 'x-client-side-rendering',
+            value: 'true',
           },
         ],
       },
     ];
+  },
+  // Skip problematic pages during server-side build
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Skip client-only pages during server builds
+      config.optimization.splitChunks.cacheGroups = {
+        ...config.optimization.splitChunks.cacheGroups,
+        clientOnly: {
+          test: module => {
+            const modulePath = module.resource || '';
+            return (
+              modulePath.includes('/app/signin/') ||
+              modulePath.includes('/app/signup/') ||
+              modulePath.includes('/app/auth/callback/')
+            );
+          },
+          name: 'client-only',
+          chunks: 'all',
+          enforce: true,
+        },
+      };
+    }
+    return config;
   },
 };
 

@@ -1,49 +1,50 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client with environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-// Create Supabase client with error handling
-let supabase: any = null;
-
-// Check if we have valid config and we're on the client side
-if (supabaseUrl && supabaseAnonKey && typeof window !== 'undefined') {
-  try {
-    supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true
-      }
-    });
-    console.log('Supabase client initialized successfully');
-  } catch (error) {
-    console.error('Failed to initialize Supabase client:', error);
-    // Create placeholder client to prevent crashes
-    supabase = createPlaceholderClient();
+// Initialize Supabase client
+const initSupabaseClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Missing Supabase credentials');
+    return createPlaceholderClient();
   }
-} else {
-  console.warn('Invalid Supabase config or running on server. Using placeholder client.');
-  supabase = createPlaceholderClient();
-}
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  });
+};
+
+// Export the client instance
+const supabase = initSupabaseClient();
 
 // Create a placeholder client for error handling
 function createPlaceholderClient() {
-  const noopPromise = () => Promise.resolve({ data: null, error: new Error('Supabase not initialized') });
+  const errorResponse = { error: new Error('Supabase client not initialized properly') };
   
   return {
     auth: {
-      signUp: noopPromise,
-      signIn: noopPromise,
-      signOut: noopPromise,
-      getUser: noopPromise,
-      onAuthStateChange: () => ({ data: null, unsubscribe: () => {} })
+      signUp: () => Promise.resolve({ user: null, session: null, error: new Error('Supabase client not initialized') }),
+      signInWithPassword: () => Promise.resolve({ user: null, session: null, error: new Error('Supabase client not initialized') }),
+      signInWithOAuth: () => Promise.resolve({ user: null, session: null, error: new Error('Supabase client not initialized') }),
+      signOut: () => Promise.resolve({ error: new Error('Supabase client not initialized') }),
+      getUser: () => Promise.resolve({ user: null, error: new Error('Supabase client not initialized') }),
+      getSession: () => Promise.resolve({ session: null, error: new Error('Supabase client not initialized') }),
+      resetPasswordForEmail: () => Promise.resolve({ data: null, error: new Error('Supabase client not initialized') }),
+      onAuthStateChange: () => {
+        return { data: { subscription: { unsubscribe: () => {} } }, error: null };
+      }
     },
     from: () => ({
-      select: noopPromise,
-      insert: noopPromise,
-      update: noopPromise,
-      delete: noopPromise
+      select: () => Promise.resolve(errorResponse),
+      insert: () => Promise.resolve(errorResponse),
+      update: () => Promise.resolve(errorResponse),
+      delete: () => Promise.resolve(errorResponse),
+      upsert: () => Promise.resolve(errorResponse)
     })
   };
 }
@@ -52,7 +53,7 @@ function createPlaceholderClient() {
 export const signUpWithSupabase = async (
   email: string, 
   password: string, 
-  metadata: { first_name: string; last_name: string; display_name?: string }
+  metadata: { first_name: string; last_name?: string; display_name?: string }
 ) => {
   try {
     // Sign up with Supabase
@@ -60,7 +61,11 @@ export const signUpWithSupabase = async (
       email,
       password,
       options: {
-        data: metadata,
+        data: {
+          first_name: metadata.first_name,
+          last_name: metadata.last_name || '',
+          display_name: metadata.display_name || (metadata.last_name ? `${metadata.first_name} ${metadata.last_name}` : metadata.first_name)
+        },
         emailRedirectTo: `${window.location.origin}/auth/callback`
       }
     });

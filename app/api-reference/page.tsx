@@ -301,7 +301,7 @@ export default function ApiReferencePage() {
                 Client SDKs
               </Link>
               <Link
-                href="https://github.com/neuralnexus/api-examples"
+                href="https://github.com/Drago-03/Neural-Nexus"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-5 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors flex items-center"

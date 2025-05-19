@@ -6,27 +6,49 @@ export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
-    // Get Supabase credentials
+    // Get Supabase credentials from environment variables
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
-    if (!supabaseUrl || !supabaseServiceKey) {
+    // Log key usage for debugging
+    console.log('Supabase URL:', supabaseUrl?.substring(0, 15) + '...');
+    console.log('Using service role key:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+    console.log('Using anon key fallback:', !process.env.SUPABASE_SERVICE_ROLE_KEY && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing Supabase credentials');
       return NextResponse.json({
         success: false,
         message: 'Server configuration error'
       }, { status: 500 });
     }
     
-    // Create admin client (server-side only)
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
+    // Initialize Supabase client
+    const supabase = createClient(
+      supabaseUrl,
+      supabaseKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false,
+        },
       }
-    });
+    );
     
     // Parse request body
-    const { email, password } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (error) {
+      console.error('Error parsing request body:', error);
+      return NextResponse.json({
+        success: false,
+        message: 'Invalid request body'
+      }, { status: 400 });
+    }
+    
+    const { email, password } = body;
     
     // Validate required fields
     if (!email || !password) {
@@ -36,19 +58,32 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
     
-    // Sign in with Supabase admin (server side)
+    console.log('Attempting signin for email:', email);
+    
+    // Sign in with email and password
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      password
+      password,
     });
     
     if (error) {
       console.error('Supabase signin error:', error.message);
+      
       return NextResponse.json({
         success: false,
-        message: error.message
+        message: error.message || 'Invalid login credentials'
       }, { status: 401 });
     }
+    
+    if (!data.user || !data.session) {
+      console.error('No user or session returned from Supabase');
+      return NextResponse.json({
+        success: false,
+        message: 'Authentication failed'
+      }, { status: 401 });
+    }
+    
+    console.log('User authenticated successfully:', data.user.id);
     
     // Return session data to client
     return NextResponse.json({
@@ -59,7 +94,7 @@ export async function POST(req: NextRequest) {
         email: data.user.email,
         user_metadata: data.user.user_metadata
       }
-    }, { status: 200 });
+    });
     
   } catch (error: any) {
     console.error('Error during server-side signin:', error);

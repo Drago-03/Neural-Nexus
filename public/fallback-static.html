@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading - Neural Nexus</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(to bottom, #1a1a2e, #000000);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    
+    .container {
+      max-width: 500px;
+      padding: 2rem;
+      background-color: rgba(255, 255, 255, 0.05);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(128, 90, 213, 0.2);
+      border-radius: 1rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+      background: linear-gradient(to right, #a78bfa, #ec4899);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      color: #d1d5db;
+    }
+    
+    .loader {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #9f7aea;
+      animation: spin 1s ease-in-out infinite;
+      margin-bottom: 1.5rem;
+    }
+    
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    .message {
+      font-size: 0.9rem;
+      margin-top: 1.5rem;
+      color: #9ca3af;
+    }
+    
+    button {
+      background: linear-gradient(to right, #8b5cf6, #ec4899);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    
+    button:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="loader"></div>
+    <h1>Loading Neural Nexus</h1>
+    <p>Please wait while we prepare your experience...</p>
+    <p class="message">JavaScript is required to continue. If you're not automatically redirected, please click the button below.</p>
+    
+    <button id="redirectButton">
+      Go to Homepage
+    </button>
+  </div>
+  
+  <script>
+    // Redirect to the homepage after a short delay
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 2000);
+    
+    // Handle manual redirect
+    document.getElementById('redirectButton').addEventListener('click', () => {
+      window.location.href = "/";
+    });
+  </script>
+</body>
+</html> 
