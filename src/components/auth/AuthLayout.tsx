@@ -1,9 +1,10 @@
 "use client";
 
-import React, { ReactNode } from 'react';
+
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
+import React, { ReactNode, useState } from 'react';
 import BrainAnimation from '@/src/components/animations/BrainAnimation'; // Assuming this is an animated component
 
 interface AuthLayoutProps {
@@ -83,6 +84,8 @@ export default function AuthLayout({
   showBrainAnimation = false,
   mode
 }: AuthLayoutProps) {
+  const [hoveredPanel, setHoveredPanel] = useState<'left' | 'right' | null>(null);
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex flex-col relative overflow-hidden">
       {/* Background radial gradient for depth */}
@@ -137,9 +140,15 @@ export default function AuthLayout({
       >
         {/* Left side - Content */}
         <motion.div
-          variants={panelVariants} // Apply panel animation
-          className="w-full md:w-1/2 flex items-center justify-center py-8 md:py-12 px-4"
-        >
+  variants={panelVariants}
+  className="w-full md:w-1/2 flex items-center justify-center py-8 md:py-12 px-4"
+  onMouseEnter={() => setHoveredPanel('left')}
+  onMouseLeave={() => setHoveredPanel(null)}
+  animate={{
+    scale: hoveredPanel === 'left' ? 1.05 : hoveredPanel === 'right' ? 0.95 : 1,
+    transition: { type: "spring", stiffness: 300, damping: 20 }
+  }}
+>
           <div className="max-w-md w-full">
             <motion.div
               initial={{ opacity: 0, y: -20 }}
@@ -163,13 +172,19 @@ export default function AuthLayout({
           </div>
         </motion.div>
 
-        {/* Right side - Animated graphic / Marketing */}
-        <motion.div
-          variants={panelVariants} // Apply panel animation
-          className="hidden md:flex w-1/2 bg-gradient-to-br from-purple-900/20 to-blue-900/20 items-center justify-center relative overflow-hidden p-8 md:p-12
-                     rounded-b-3xl md:rounded-l-none md:rounded-r-3xl" /* Ensure rounded corners align */
-        >
-          {/* Internal background noise texture (already there) */}
+       <motion.div
+  variants={panelVariants}
+  className="hidden md:flex w-1/2 bg-gradient-to-br from-purple-900/20 to-blue-900/20 items-center justify-center relative overflow-hidden p-8 md:p-12
+             rounded-b-3xl md:rounded-l-none md:rounded-r-3xl"
+  onMouseEnter={() => setHoveredPanel('right')}
+  onMouseLeave={() => setHoveredPanel(null)}
+  animate={{
+    scale: hoveredPanel === 'right' ? 1.05 : hoveredPanel === 'left' ? 0.95 : 1,
+    transition: { type: "spring", stiffness: 300, damping: 20 }
+  }}
+>
+
+          
           <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10"></div>
 
           {showBrainAnimation ? (

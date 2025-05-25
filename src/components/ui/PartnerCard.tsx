@@ -1,4 +1,4 @@
-"use client"; // Keep this if you're using App Router and need client-side interactions
+"use client"; 
 
 import React from 'react';
 import Image from 'next/image';
