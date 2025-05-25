@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AnimatedButton } from '@/components/ui/animated-button';
 import { 
@@ -36,6 +36,9 @@ const CONTRIBUTION_TYPES = [
   { id: 'hackathon', name: 'Hackathon Project', icon: <Zap className="h-5 w-5 text-purple-400" /> }
 ];
 
+// Define chunk size for large file uploads (5MB)
+const CHUNK_SIZE = 5 * 1024 * 1024;
+
 export default function UploadModal({ onClose }: UploadModalProps) {
   // Gen-Z style variable names
   const [modelName, setModelName] = useState<string>('');
@@ -66,6 +69,10 @@ export default function UploadModal({ onClose }: UploadModalProps) {
   const [allowDonations, setAllowDonations] = useState(false);
   const [currentCodeEditIndex, setCurrentCodeEditIndex] = useState<number | null>(null);
   const [hardware, setHardware] = useState<string>('');
+  const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
+  const [totalProgress, setTotalProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'processing' | 'success' | 'error'>('idle');
+  const [resumableUploads, setResumableUploads] = useState<{[key: string]: {uploadId: string, chunks: number, uploaded: number}}>({});
 
   // Large model options for demo integration
   const largeModelOptions = [
@@ -191,15 +198,252 @@ export default function UploadModal({ onClose }: UploadModalProps) {
     setCurrentStep(3);
   };
 
-  const handleFinalSubmit = () => {
-    setIsUploading(true);
-    // Simulate upload process
-    setTimeout(() => {
-      setIsUploading(false);
-      onClose();
-      // This is where you'd handle submission to backend
-    }, 3000);
+  // Function to handle chunked file upload
+  const uploadFileInChunks = async (file: File, index: number) => {
+    const fileName = file.name;
+    const fileSize = file.size;
+    const numChunks = Math.ceil(fileSize / CHUNK_SIZE);
+    let uploadId = '';
+    
+    // Initialize progress tracking for this file
+    setUploadProgress(prev => ({...prev, [fileName]: 0}));
+    
+    try {
+      // Check if we have a resumable upload for this file
+      if (resumableUploads[fileName]) {
+        // Resume previous upload
+        uploadId = resumableUploads[fileName].uploadId;
+        const uploadedChunks = resumableUploads[fileName].uploaded;
+        
+        // Start from where we left off
+        for (let i = uploadedChunks; i < numChunks; i++) {
+          const start = i * CHUNK_SIZE;
+          const end = Math.min(fileSize, start + CHUNK_SIZE);
+          const chunk = file.slice(start, end);
+          
+          // Upload chunk
+          const formData = new FormData();
+          formData.append('file', chunk);
+          formData.append('uploadId', uploadId);
+          formData.append('chunkIndex', i.toString());
+          formData.append('totalChunks', numChunks.toString());
+          
+          const response = await fetch('/api/upload/chunk', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to upload chunk ${i}`);
+          }
+          
+          // Update progress
+          const progress = Math.round(((i + 1) / numChunks) * 100);
+          setUploadProgress(prev => ({...prev, [fileName]: progress}));
+          
+          // Update resumable upload info
+          setResumableUploads(prev => ({
+            ...prev, 
+            [fileName]: {
+              ...prev[fileName],
+              uploaded: i + 1
+            }
+          }));
+        }
+      } else {
+        // Start new upload
+        // Initialize the upload
+        const initResponse = await fetch('/api/upload/init', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fileName,
+            fileSize,
+            fileType: file.type,
+            totalChunks: numChunks,
+          }),
+        });
+        
+        if (!initResponse.ok) {
+          throw new Error('Failed to initialize upload');
+        }
+        
+        const initData = await initResponse.json();
+        uploadId = initData.uploadId;
+        
+        // Store resumable upload info
+        setResumableUploads(prev => ({
+          ...prev, 
+          [fileName]: {
+            uploadId,
+            chunks: numChunks,
+            uploaded: 0
+          }
+        }));
+        
+        // Upload chunks
+        for (let i = 0; i < numChunks; i++) {
+          const start = i * CHUNK_SIZE;
+          const end = Math.min(fileSize, start + CHUNK_SIZE);
+          const chunk = file.slice(start, end);
+          
+          // Upload chunk
+          const formData = new FormData();
+          formData.append('file', chunk);
+          formData.append('uploadId', uploadId);
+          formData.append('chunkIndex', i.toString());
+          formData.append('totalChunks', numChunks.toString());
+          
+          const response = await fetch('/api/upload/chunk', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to upload chunk ${i}`);
+          }
+          
+          // Update progress
+          const progress = Math.round(((i + 1) / numChunks) * 100);
+          setUploadProgress(prev => ({...prev, [fileName]: progress}));
+          
+          // Update resumable upload info
+          setResumableUploads(prev => ({
+            ...prev, 
+            [fileName]: {
+              ...prev[fileName],
+              uploaded: i + 1
+            }
+          }));
+        }
+      }
+      
+      // Complete the upload
+      const completeResponse = await fetch('/api/upload/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          uploadId,
+          fileName,
+        }),
+      });
+      
+      if (!completeResponse.ok) {
+        throw new Error('Failed to complete upload');
+      }
+      
+      const completeData = await completeResponse.json();
+      return completeData.fileUrl;
+      
+    } catch (error) {
+      console.error(`Error uploading file ${fileName}:`, error);
+      throw error;
+    }
   };
+
+  // Updated function to handle submission with chunked uploads
+  const handleFinalSubmit = async () => {
+    setIsUploading(true);
+    setUploadStatus('uploading');
+    
+    try {
+      // Upload model files
+      const modelFileUrls = [];
+      
+      // Upload files in parallel with Promise.all
+      for (let i = 0; i < modelFiles.length; i++) {
+        const fileUrl = await uploadFileInChunks(modelFiles[i], i);
+        modelFileUrls.push(fileUrl);
+      }
+      
+      // Upload readme file if provided
+      let readmeUrl = '';
+      if (readmeFile) {
+        readmeUrl = await uploadFileInChunks(readmeFile, 0);
+      }
+      
+      // Upload dataset files if provided
+      const datasetFileUrls = [];
+      for (let i = 0; i < datasetFiles.length; i++) {
+        const fileUrl = await uploadFileInChunks(datasetFiles[i], i);
+        datasetFileUrls.push(fileUrl);
+      }
+      
+      // All files uploaded, now create the model in the database
+      setUploadStatus('processing');
+      
+      const modelData = {
+        name: modelName,
+        description,
+        type: modelType,
+        tags: tags.split(',').map(tag => tag.trim()),
+        files: modelFileUrls,
+        readme: readmeUrl,
+        datasets: datasetFileUrls,
+        price: price ? parseFloat(price) : 0,
+        isPrivate,
+        licenseType,
+        version: versionTag,
+        isOpenSource,
+        githubRepo: isOpenSource ? githubRepo : '',
+        paperUrl,
+        framework,
+        allowDonations,
+        hardware,
+        codeExamples,
+        testing: {
+          enabled: testingEnabled,
+          demoEnabled,
+          largeModel: demoEnabled ? selectedLargeModel : ''
+        }
+      };
+      
+      const response = await fetch('/api/models', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(modelData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to create model: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setUploadStatus('success');
+      
+      // Clear the resumable uploads since we're done
+      setResumableUploads({});
+      
+      // Redirect to model page after short delay
+      setTimeout(() => {
+        window.location.href = `/models/${data.id}`;
+      }, 2000);
+      
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      setUploadStatus('error');
+      setError(error.message || 'Something went wrong during upload');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Calculate total progress across all files
+  useEffect(() => {
+    if (Object.keys(uploadProgress).length === 0) {
+      setTotalProgress(0);
+      return;
+    }
+    
+    const totalProgressValue = Object.values(uploadProgress).reduce((sum, progress) => sum + progress, 0) / Object.keys(uploadProgress).length;
+    setTotalProgress(Math.round(totalProgressValue));
+  }, [uploadProgress]);
 
   return (
     <motion.div 

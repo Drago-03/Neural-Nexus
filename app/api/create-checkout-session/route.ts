@@ -1,61 +1,110 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import Stripe from 'stripe';
 
-// Initialize Stripe with your secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+// Initialize Stripe with the secret key
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
 });
 
 export async function POST(req: NextRequest) {
   try {
-    const { modelId, userId, modelName, modelDescription, price, imageUrl } = await req.json();
+    // Authenticate user
+    const session = await getServerSession(authOptions);
     
-    // Validate required fields
-    if (!modelId || !userId || !price) {
-      return new NextResponse(
-        JSON.stringify({ error: 'Missing required fields' }),
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized - You must be logged in to make a purchase' },
+        { status: 401 }
+      );
+    }
+    
+    // Get user ID
+    const userId = session.user.id;
+    
+    // Parse request body
+    const { modelId, modelName, price, currency = 'USD' } = await req.json();
+    
+    // Validate required parameters
+    if (!modelId || !modelName || !price) {
+      return NextResponse.json(
+        { error: 'Missing required parameters: modelId, modelName, or price' },
         { status: 400 }
       );
     }
     
-    // Create checkout session
-    const session = await stripe.checkout.sessions.create({
+    // Calculate the price in cents (Stripe requires the amount in smallest currency unit)
+    const amount = Math.round(price * 100);
+    
+    // Create a checkout session
+    const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: currency.toLowerCase(),
             product_data: {
-              name: modelName || 'AI Model',
-              description: modelDescription || 'AI Model purchase',
-              images: imageUrl ? [imageUrl] : [],
+              name: modelName,
+              description: `License for AI model: ${modelName}`,
+              metadata: {
+                modelId,
+              },
             },
-            unit_amount: Math.round(price * 100), // Convert to cents
+            unit_amount: amount,
           },
           quantity: 1,
         },
       ],
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/models/${modelId}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/models/${modelId}?cancelled=true`,
       metadata: {
         modelId,
         userId,
-        type: 'model_purchase',
+        timestamp: new Date().toISOString(),
       },
+      customer_email: session.user.email || undefined,
     });
     
-    return new NextResponse(
-      JSON.stringify({ 
-        sessionId: session.id,
-        url: session.url 
-      }),
-      { status: 200 }
-    );
-  } catch (error) {
+    // Log the checkout attempt
+    console.log(`Checkout session created for model ${modelId} by user ${userId}`);
+    
+    // Store the checkout session in database for tracking
+    try {
+      // Record the checkout session in your database
+      await stripe.checkout.sessions.retrieve(checkoutSession.id);
+      
+      // In a real application, you would store this in your database:
+      /*
+      await db.checkoutSessions.create({
+        sessionId: checkoutSession.id,
+        userId,
+        modelId,
+        amount,
+        currency,
+        status: 'created',
+        createdAt: new Date()
+      });
+      */
+    } catch (logError) {
+      console.error('Error logging checkout session:', logError);
+      // Continue anyway as the checkout was created successfully
+    }
+    
+    // Return the checkout session URL
+    return NextResponse.json({
+      url: checkoutSession.url,
+      sessionId: checkoutSession.id,
+    });
+  } catch (error: any) {
     console.error('Error creating checkout session:', error);
-    return new NextResponse(
-      JSON.stringify({ error: 'Failed to create checkout session' }),
+    
+    return NextResponse.json(
+      { 
+        error: 'Failed to create checkout session',
+        details: error.message
+      },
       { status: 500 }
     );
   }

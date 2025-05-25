@@ -11,7 +11,10 @@
       }
     ]
   ],
-  "plugins": [],
+  "plugins": [
+    "@babel/plugin-transform-private-methods",
+    "@babel/plugin-transform-private-property-in-object"
+  ],
   "env": {
     "edge": {
       "presets": [

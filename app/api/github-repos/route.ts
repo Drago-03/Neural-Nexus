@@ -3,6 +3,7 @@ import { GitHubCrawler } from '@/lib/GitHubCrawler';
 
 // Add export config for dynamic route handling
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

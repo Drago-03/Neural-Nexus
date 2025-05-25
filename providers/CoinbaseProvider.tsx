@@ -1,138 +1,137 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { toast } from 'react-hot-toast';
 
-// Define the context type
-type CoinbaseContextType = {
-  isConnected: boolean;
-  account: string | null;
-  chainId: number | null;
-  connect: () => Promise<void>;
-  disconnect: () => void;
-  balance: string | null;
-  isInitialized: boolean;
-};
-
-// Create the context with default values
-const CoinbaseContext = createContext<CoinbaseContextType>({
-  isConnected: false,
-  account: null,
-  chainId: null,
-  connect: async () => {},
-  disconnect: () => {},
-  balance: null,
-  isInitialized: false,
-});
-
-// Hook to use the context
-export const useCoinbase = () => useContext(CoinbaseContext);
-
-interface CoinbaseProviderProps {
-  children: ReactNode;
+interface CoinbaseCheckoutOptions {
+  name: string;
+  description: string;
+  local_price: {
+    amount: string;
+    currency: string;
+  };
+  metadata?: Record<string, any>;
+  redirect_url?: string;
+  cancel_url?: string;
 }
 
-// Provider component
-export const CoinbaseProvider = ({ children }: CoinbaseProviderProps) => {
-  // Browser detection - MUST be first hook
-  const [isBrowser, setIsBrowser] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [balance, setBalance] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [account, setAccount] = useState<string | null>(null);
-  const [chainId, setChainId] = useState<number | null>(null);
-  
-  // Check if Coinbase is enabled from env
-  const isCoinbaseEnabled = typeof process !== 'undefined' && 
-    process.env && 
-    process.env.NEXT_PUBLIC_ENABLE_COINBASE === 'true';
+interface CheckoutResult {
+  url?: string;
+  code?: string;
+  error?: string;
+}
 
-  // First useEffect just to detect if we're in the browser
+interface CoinbaseContextType {
+  isLoading: boolean;
+  error: string | null;
+  checkoutWithCoinbase: (options: CoinbaseCheckoutOptions) => Promise<CheckoutResult>;
+  checkTransactionStatus: (chargeCode: string) => Promise<{
+    status: 'new' | 'pending' | 'confirmed' | 'failed' | 'expired' | 'completed' | 'unresolved';
+    error?: string;
+  }>;
+}
+
+const CoinbaseContext = createContext<CoinbaseContextType>({
+  isLoading: false,
+  error: null,
+  checkoutWithCoinbase: async () => ({ error: 'Provider not initialized' }),
+  checkTransactionStatus: async () => ({ status: 'unresolved', error: 'Provider not initialized' })
+});
+
+export const useCoinbase = () => useContext(CoinbaseContext);
+
+export function CoinbaseProvider({ children }: { children: ReactNode }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Reset error on mount
   useEffect(() => {
-    setIsBrowser(true);
-    setIsInitialized(true);
+    setError(null);
   }, []);
 
-  // Placeholder for connection status - in a real app, this would be updated based on wallet connection
-  useEffect(() => {
-    if (!isBrowser || !isCoinbaseEnabled) return;
+  const checkoutWithCoinbase = async (options: CoinbaseCheckoutOptions): Promise<CheckoutResult> => {
+    setIsLoading(true);
+    setError(null);
     
-    // This is a placeholder. In a real implementation, you would listen for wallet connection changes
-    // using the appropriate OnchainKit hooks or events.
-    const checkConnection = async () => {
-      // Mock connection check - replace with actual implementation
-      try {
-        setIsConnected(false);
-        setAccount(null);
-        setChainId(null);
-        setBalance(null);
-      } catch (error) {
-        console.error('Error checking Coinbase connection:', error);
+    try {
+      // Add default redirect URLs if not provided
+      if (!options.redirect_url) {
+        options.redirect_url = `${window.location.origin}/checkout/success`;
       }
-    };
-
-    checkConnection();
-  }, [isBrowser, isCoinbaseEnabled]);
-
-  // Connect to Coinbase wallet - placeholder
-  const connect = async () => {
-    if (!isBrowser || !isCoinbaseEnabled) return;
-    
-    try {
-      // In a real implementation, this would trigger the Coinbase wallet connection
-      console.log("Coinbase connection attempt - placeholder");
-      console.log("Coinbase connected, fam!");
-      // Mock connection - replace with actual implementation
-      setIsConnected(false);
-      setAccount(null);
-      setChainId(null);
-      setBalance('0.0');
-    } catch (error) {
-      console.error('Failed to connect to Coinbase wallet:', error);
+      
+      if (!options.cancel_url) {
+        options.cancel_url = `${window.location.origin}/checkout/cancelled`;
+      }
+      
+      // Call our API to create a Coinbase checkout
+      const response = await fetch('/api/coinbase/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(options),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout');
+      }
+      
+      return {
+        url: data.hosted_url,
+        code: data.code
+      };
+    } catch (error: any) {
+      console.error('Coinbase checkout error:', error);
+      setError(error.message || 'Failed to create checkout');
+      
+      return {
+        error: error.message || 'Failed to create checkout'
+      };
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Disconnect from Coinbase wallet - placeholder
-  const disconnect = () => {
-    if (!isBrowser || !isCoinbaseEnabled) return;
+  const checkTransactionStatus = async (chargeCode: string) => {
+    setIsLoading(true);
     
     try {
-      // In a real implementation, this would disconnect the Coinbase wallet
-      console.log("Coinbase disconnection attempt - placeholder");
-      console.log("Coinbase disconnected, no cap!");
-      setIsConnected(false);
-      setAccount(null);
-      setChainId(null);
-      setBalance(null);
-    } catch (error) {
-      console.error('Failed to disconnect from Coinbase wallet:', error);
+      const response = await fetch(`/api/coinbase/check-status?code=${chargeCode}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to check transaction status');
+      }
+      
+      return {
+        status: data.status,
+      };
+    } catch (error: any) {
+      console.error('Error checking transaction status:', error);
+      
+      return {
+        status: 'unresolved',
+        error: error.message || 'Failed to check transaction status'
+      };
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Context value
-  const contextValue: CoinbaseContextType = {
-    isConnected,
-    account,
-    chainId,
-    connect,
-    disconnect,
-    balance,
-    isInitialized
+  const value: CoinbaseContextType = {
+    isLoading,
+    error,
+    checkoutWithCoinbase,
+    checkTransactionStatus
   };
 
-  // Early return for server-side rendering or if Coinbase is disabled
-  if (!isBrowser || !isCoinbaseEnabled) {
-    return (
-      <CoinbaseContext.Provider value={contextValue}>
-        {children}
-      </CoinbaseContext.Provider>
-    );
-  }
-
-  // Basic provider implementation that doesn't use OnchainKitProvider
-  // This avoids type issues while still providing the context
-  return (
-    <CoinbaseContext.Provider value={contextValue}>
-      {isInitialized ? children : <div>Loading Coinbase, hang tight...</div>}
-    </CoinbaseContext.Provider>
-  );
-}; 
+  return <CoinbaseContext.Provider value={value}>{children}</CoinbaseContext.Provider>;
+} 

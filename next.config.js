@@ -50,6 +50,18 @@ const nextConfig = {
           'react': false,
           'react-dom': false,
         },
+        // Add fallbacks for Node.js modules in Edge
+        fallback: {
+          ...config.resolve.fallback,
+          crypto: false,
+          stream: false,
+          fs: false,
+          path: false,
+          process: false,
+          util: false,
+          buffer: false,
+          querystring: false,
+        },
       };
     }
     

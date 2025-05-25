@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Camera, User, Building, MapPin, Briefcase, Mail, Link, MoreHorizontal } from 'lucide-react';
 import { AnimatedButton } from './ui/animated-button';
@@ -40,6 +40,9 @@ export default function ProfileCompleteModal({
   
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [newSkill, setNewSkill] = useState('');
+  
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const interestOptions = [
     'Computer Vision', 'NLP', 'Generative AI', 'Reinforcement Learning',
@@ -88,7 +91,48 @@ export default function ProfileCompleteModal({
     if (step < 3) {
       setStep(step + 1);
     } else {
-      onComplete(profileData);
+      // Submit profile data to the API
+      saveProfileData(profileData);
+    }
+  };
+  
+  const saveProfileData = async (data: any) => {
+    try {
+      // Make a copy of the data to avoid modifying the original state
+      const sanitizedData = {
+        displayName: data.displayName,
+        bio: data.bio,
+        organization: data.organization || undefined,
+        location: data.location || undefined,
+        jobTitle: data.jobTitle || undefined,
+        website: data.website || undefined,
+        skills: data.skills.length > 0 ? data.skills : undefined,
+        interests: data.interests.length > 0 ? data.interests : undefined,
+        // Don't include the avatar here - it's uploaded separately
+      };
+
+      // Call the API to save profile data
+      const response = await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sanitizedData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save profile data');
+      }
+      
+      const result = await response.json();
+      
+      // Call the onComplete callback with the updated user data
+      onComplete(result.user);
+    } catch (error) {
+      console.error('Error saving profile data:', error);
+      // Could add error handling UI here
+      alert('Failed to save profile data. Please try again.');
     }
   };
   
@@ -96,6 +140,64 @@ export default function ProfileCompleteModal({
     if (step > 1) {
       setStep(step - 1);
     }
+  };
+  
+  // Handle profile image upload
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Only image files are allowed');
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+    
+    try {
+      setIsUploading(true);
+      
+      // Create form data
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      // Upload image
+      const response = await fetch('/api/user/avatar', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload image');
+      }
+      
+      const result = await response.json();
+      
+      // Update profile data with new avatar URL
+      setProfileData(prev => ({
+        ...prev,
+        profilePicture: result.avatar
+      }));
+      
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+  
+  // Trigger file input click
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
   
   return (
@@ -177,13 +279,30 @@ export default function ProfileCompleteModal({
                           ) : (
                             <User className="w-10 h-10 text-gray-600" />
                           )}
+                          
+                          {isUploading && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <div className="w-8 h-8 border-2 border-t-purple-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+                            </div>
+                          )}
                         </div>
                         <button 
                           className="absolute bottom-0 right-0 bg-purple-600 p-1.5 rounded-full border-2 border-gray-900"
                           aria-label="Upload profile picture"
+                          onClick={triggerFileInput}
+                          disabled={isUploading}
                         >
                           <Camera className="w-3.5 h-3.5" />
                         </button>
+                        <input 
+                          type="file"
+                          ref={fileInputRef}
+                          className="hidden"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          disabled={isUploading}
+                          aria-label="Upload profile picture"
+                        />
                       </div>
                       <p className="text-xs text-gray-400 mt-2">Upload Profile Picture</p>
                     </div>
