@@ -1,99 +1,150 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import OptimizedImage from "@/components/OptimizedImage";
+import { useSupabase } from '@/providers/SupabaseProvider';
 import { 
   Users, Star, Calendar, MessageSquare, ArrowRight, 
   Zap, Award, Sparkles, TrendingUp, Globe, Heart, ChevronLeft, ChevronRight, Upload, Code, Wallet, Repeat, DollarSign
 } from 'lucide-react';
 
 export default function CommunityPage() {
+  const { user } = useSupabase();
   const [activeTab, setActiveTab] = useState('trending');
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    members: 0,
+    models: 0,
+    discussions: 0,
+    countries: 0
+  });
+  const [featuredCreators, setFeaturedCreators] = useState([]);
+  const [trendingModels, setTrendingModels] = useState([]);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [isCreatorsLoading, setIsCreatorsLoading] = useState(true);
+  const [isModelsLoading, setIsModelsLoading] = useState(true);
+  const [isEventsLoading, setIsEventsLoading] = useState(true);
 
-  const featuredCreators = [
-    {
-      name: "Sarah AI",
-      image: "/creators/sarah.jpg",
-      role: "ML Engineer",
-      models: 12,
-      followers: "5.2K",
-      bio: "Building the next gen of computer vision models",
-      tags: ["#ComputerVision", "#DeepLearning"]
-    },
-    {
-      name: "DataWhiz",
-      image: "/creators/datawhiz.jpg",
-      role: "Data Scientist",
-      models: 8,
-      followers: "3.8K",
-      bio: "Specializing in NLP and text generation",
-      tags: ["#NLP", "#GPT"]
-    },
-    {
-      name: "RoboMaster",
-      image: "/creators/robomaster.jpg",
-      role: "Robotics Engineer",
-      models: 15,
-      followers: "7.1K",
-      bio: "Creating AI models for robotics and automation",
-      tags: ["#Robotics", "#RL"]
-    }
-  ];
+  // Fetch real stats from API when component mounts
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/community/stats');
+        
+        if (response.ok) {
+          const data = await response.json();
+          setStats({
+            members: data.members,
+            models: data.models,
+            discussions: data.discussions,
+            countries: data.countries
+          });
+          console.log("✅ Loaded community stats:", data);
+        } else {
+          console.error("❌ Failed to fetch community stats:", response.status);
+          // Keep fallback values
+        }
+      } catch (error) {
+        console.error("❌ Error fetching community stats:", error);
+        // Keep fallback values
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const trendingModels = [
-    {
-      name: "SuperRes Pro",
-      image: "/models/superres.jpg",
-      creator: "PixelPro",
-      category: "Image Enhancement",
-      likes: 1234,
-      downloads: "50K+"
-    },
-    {
-      name: "TextMaster GPT",
-      image: "/models/textmaster.jpg",
-      creator: "AIWriter",
-      category: "Text Generation",
-      likes: 982,
-      downloads: "30K+"
-    },
-    {
-      name: "VoiceClone AI",
-      image: "/models/voiceclone.jpg",
-      creator: "AudioLab",
-      category: "Speech Synthesis",
-      likes: 756,
-      downloads: "25K+"
-    }
-  ];
+    fetchStats();
+  }, []);
+  
+  // Fetch featured creators
+  useEffect(() => {
+    const fetchCreators = async () => {
+      try {
+        setIsCreatorsLoading(true);
+        const response = await fetch('/api/community/featured-creators');
+        
+        if (response.ok) {
+          const data = await response.json();
+          setFeaturedCreators(data);
+          console.log("✅ Loaded featured creators:", data.length);
+        } else {
+          console.error("❌ Failed to fetch featured creators:", response.status);
+          // Keep fallback values
+        }
+      } catch (error) {
+        console.error("❌ Error fetching featured creators:", error);
+        // Keep fallback values
+      } finally {
+        setIsCreatorsLoading(false);
+      }
+    };
 
-  const upcomingEvents = [
-    {
-      title: "AI Model Hackathon",
-      date: "Dec 15-17, 2024",
-      image: "/events/hackathon.jpg",
-      location: "Virtual Event",
-      attendees: 500
-    },
-    {
-      title: "Neural Networks Workshop",
-      date: "Dec 20, 2024",
-      image: "/events/workshop.jpg",
-      location: "Online",
-      attendees: 300
-    },
-    {
-      title: "AI Model Showcase",
-      date: "Jan 5, 2025",
-      image: "/events/showcase.jpg",
-      location: "Virtual Conference",
-      attendees: 1000
+    fetchCreators();
+  }, []);
+  
+  // Fetch trending models
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        setIsModelsLoading(true);
+        const response = await fetch('/api/community/trending-models');
+        
+        if (response.ok) {
+          const data = await response.json();
+          setTrendingModels(data);
+          console.log("✅ Loaded trending models:", data.length);
+        } else {
+          console.error("❌ Failed to fetch trending models:", response.status);
+          // Keep fallback values
+        }
+      } catch (error) {
+        console.error("❌ Error fetching trending models:", error);
+        // Keep fallback values
+      } finally {
+        setIsModelsLoading(false);
+      }
+    };
+
+    fetchModels();
+  }, []);
+
+  // Fetch upcoming events
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setIsEventsLoading(true);
+        const response = await fetch('/api/community/upcoming-events');
+        
+        if (response.ok) {
+          const data = await response.json();
+          setUpcomingEvents(data);
+          console.log("✅ Loaded upcoming events:", data.length);
+        } else {
+          console.error("❌ Failed to fetch upcoming events:", response.status);
+          // Keep fallback values
+        }
+      } catch (error) {
+        console.error("❌ Error fetching upcoming events:", error);
+        // Keep fallback values
+      } finally {
+        setIsEventsLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  // Format numbers for display
+  const formatNumber = (num: number): string => {
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K+';
     }
-  ];
+    return num.toString() + '+';
+  };
 
   const discussions = [
     {
@@ -147,12 +198,14 @@ export default function CommunityPage() {
               Connect with fellow creators, share your models, and stay updated with the latest in AI innovation.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link
-                href="/signup"
-                className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg font-medium hover:opacity-90 transition-opacity"
-              >
-                Join Community
-              </Link>
+              {!user && (
+                <Link
+                  href="/signup"
+                  className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg font-medium hover:opacity-90 transition-opacity"
+                >
+                  Join Community
+                </Link>
+              )}
               <Link
                 href="/discord"
                 className="px-8 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors"
@@ -169,10 +222,10 @@ export default function CommunityPage() {
         <div className="container mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[
-              { icon: <Users className="h-6 w-6 text-purple-400" />, label: "Active Members", value: "50K+" },
-              { icon: <Star className="h-6 w-6 text-yellow-400" />, label: "AI Models Shared", value: "10K+" },
-              { icon: <MessageSquare className="h-6 w-6 text-blue-400" />, label: "Daily Discussions", value: "1K+" },
-              { icon: <Globe className="h-6 w-6 text-green-400" />, label: "Countries", value: "120+" }
+              { icon: <Users className="h-6 w-6 text-purple-400" />, label: "Active Members", value: formatNumber(stats.members) },
+              { icon: <Star className="h-6 w-6 text-yellow-400" />, label: "AI Models Shared", value: formatNumber(stats.models) },
+              { icon: <MessageSquare className="h-6 w-6 text-blue-400" />, label: "Daily Discussions", value: formatNumber(stats.discussions) },
+              { icon: <Globe className="h-6 w-6 text-green-400" />, label: "Countries", value: formatNumber(stats.countries) }
             ].map((stat, index) => (
               <motion.div
                 key={index}
@@ -184,7 +237,7 @@ export default function CommunityPage() {
                 <div className="flex items-center gap-4">
                   {stat.icon}
                   <div>
-                    <div className="text-2xl font-bold">{stat.value}</div>
+                    <div className="text-2xl font-bold">{isLoading ? "..." : stat.value}</div>
                     <div className="text-gray-400">{stat.label}</div>
                   </div>
                 </div>
@@ -333,40 +386,62 @@ export default function CommunityPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredCreators.map((creator, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-gray-800/30 rounded-xl overflow-hidden border border-gray-700/50"
-              >
-                <div className="h-48 relative">
-                  <OptimizedImage
-                    src={creator.image}
-                    alt={creator.name}
-                    className="w-full h-full"
-                    aspectRatio="auto"
-                  />
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2">{creator.name}</h3>
-                  <p className="text-purple-400 mb-3">{creator.role}</p>
-                  <p className="text-gray-300 mb-4">{creator.bio}</p>
-                  <div className="flex gap-2 mb-4">
-                    {creator.tags.map((tag, i) => (
-                      <span key={i} className="text-sm bg-gray-700/50 px-3 py-1 rounded-full">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-400">
-                    <span>{creator.models} Models</span>
-                    <span>{creator.followers} Followers</span>
+            {isCreatorsLoading ? (
+              // Show skeleton loaders while loading
+              Array(3).fill(0).map((_, index) => (
+                <div key={index} className="bg-gray-800/30 rounded-xl overflow-hidden border border-gray-700/50 animate-pulse">
+                  <div className="h-48 bg-gray-700/50"></div>
+                  <div className="p-6">
+                    <div className="h-6 bg-gray-700/50 rounded w-2/3 mb-2"></div>
+                    <div className="h-4 bg-gray-700/50 rounded w-1/3 mb-3"></div>
+                    <div className="h-4 bg-gray-700/50 rounded w-full mb-4"></div>
+                    <div className="flex gap-2 mb-4">
+                      <div className="h-6 bg-gray-700/50 rounded-full w-20"></div>
+                      <div className="h-6 bg-gray-700/50 rounded-full w-20"></div>
+                    </div>
+                    <div className="flex justify-between">
+                      <div className="h-4 bg-gray-700/50 rounded w-1/4"></div>
+                      <div className="h-4 bg-gray-700/50 rounded w-1/4"></div>
+                    </div>
                   </div>
                 </div>
-              </motion.div>
-            ))}
+              ))
+            ) : (
+              featuredCreators.map((creator, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-gray-800/30 rounded-xl overflow-hidden border border-gray-700/50"
+                >
+                  <div className="h-48 relative">
+                    <OptimizedImage
+                      src={creator.image}
+                      alt={creator.name}
+                      className="w-full h-full"
+                      aspectRatio="auto"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold mb-2">{creator.name}</h3>
+                    <p className="text-purple-400 mb-3">{creator.role}</p>
+                    <p className="text-gray-300 mb-4">{creator.bio}</p>
+                    <div className="flex gap-2 mb-4">
+                      {creator.tags.map((tag, i) => (
+                        <span key={i} className="text-sm bg-gray-700/50 px-3 py-1 rounded-full">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-400">
+                      <span>{creator.models} Models</span>
+                      <span>{creator.followers} Followers</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -382,37 +457,55 @@ export default function CommunityPage() {
                 </div>
                 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {trendingModels.map((model, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-gray-800/30 rounded-xl overflow-hidden border border-gray-700/50"
-              >
-                <div className="h-48 relative">
-                  <OptimizedImage
-                    src={model.image}
-                    alt={model.name}
-                    className="w-full h-full"
-                    aspectRatio="auto"
-                  />
+            {isModelsLoading ? (
+              // Show skeleton loaders while loading
+              Array(3).fill(0).map((_, index) => (
+                <div key={index} className="bg-gray-800/30 rounded-xl overflow-hidden border border-gray-700/50 animate-pulse">
+                  <div className="h-48 bg-gray-700/50"></div>
+                  <div className="p-6">
+                    <div className="h-4 bg-gray-700/50 rounded w-1/3 mb-2"></div>
+                    <div className="h-6 bg-gray-700/50 rounded w-2/3 mb-2"></div>
+                    <div className="h-4 bg-gray-700/50 rounded w-1/2 mb-4"></div>
+                    <div className="flex justify-between">
+                      <div className="h-4 bg-gray-700/50 rounded w-1/4"></div>
+                      <div className="h-4 bg-gray-700/50 rounded w-1/4"></div>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-6">
-                  <div className="text-sm text-purple-400 mb-2">{model.category}</div>
-                  <h3 className="text-xl font-bold mb-2">{model.name}</h3>
-                  <p className="text-gray-400 mb-4">by {model.creator}</p>
-                  <div className="flex justify-between text-sm">
-                    <span className="flex items-center">
-                      <Heart className="h-4 w-4 mr-1" /> {model.likes}
-                    </span>
-                    <span className="flex items-center">
-                      <TrendingUp className="h-4 w-4 mr-1" /> {model.downloads}
-                    </span>
-              </div>
-            </div>
-              </motion.div>
-            ))}
+              ))
+            ) : (
+              trendingModels.map((model, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-gray-800/30 rounded-xl overflow-hidden border border-gray-700/50"
+                >
+                  <div className="h-48 relative">
+                    <OptimizedImage
+                      src={model.image}
+                      alt={model.name}
+                      className="w-full h-full"
+                      aspectRatio="auto"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <div className="text-sm text-purple-400 mb-2">{model.category}</div>
+                    <h3 className="text-xl font-bold mb-2">{model.name}</h3>
+                    <p className="text-gray-400 mb-4">by {model.creator}</p>
+                    <div className="flex justify-between text-sm">
+                      <span className="flex items-center">
+                        <Heart className="h-4 w-4 mr-1" /> {model.likes}
+                      </span>
+                      <span className="flex items-center">
+                        <TrendingUp className="h-4 w-4 mr-1" /> {model.downloads}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -425,36 +518,54 @@ export default function CommunityPage() {
             <Link href="/events" className="text-purple-400 hover:text-purple-300 flex items-center">
               View all events <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
-            </div>
+          </div>
             
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {upcomingEvents.map((event, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-gray-800/30 rounded-xl overflow-hidden border border-gray-700/50"
-              >
-                <div className="h-48 relative">
-                  <OptimizedImage
-                    src={event.image}
-                    alt={event.title}
-                    className="w-full h-full"
-                    aspectRatio="auto"
-                  />
+            {isEventsLoading ? (
+              // Show skeleton loaders while loading
+              Array(3).fill(0).map((_, index) => (
+                <div key={index} className="bg-gray-800/30 rounded-xl overflow-hidden border border-gray-700/50 animate-pulse">
+                  <div className="h-48 bg-gray-700/50"></div>
+                  <div className="p-6">
+                    <div className="h-4 bg-gray-700/50 rounded w-1/3 mb-2"></div>
+                    <div className="h-6 bg-gray-700/50 rounded w-2/3 mb-2"></div>
+                    <div className="h-4 bg-gray-700/50 rounded w-1/2 mb-4"></div>
+                    <div className="flex items-center">
+                      <div className="h-4 bg-gray-700/50 rounded w-1/4 mr-2"></div>
+                      <div className="h-4 bg-gray-700/50 rounded w-1/4"></div>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-6">
-                  <div className="text-sm text-purple-400 mb-2">{event.date}</div>
-                  <h3 className="text-xl font-bold mb-2">{event.title}</h3>
-                  <p className="text-gray-400 mb-4">{event.location}</p>
-                  <div className="flex items-center text-sm text-gray-400">
-                    <Users className="h-4 w-4 mr-2" />
-                    {event.attendees}+ attending
-            </div>
-          </div>
-              </motion.div>
-            ))}
+              ))
+            ) : (
+              upcomingEvents.map((event, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-gray-800/30 rounded-xl overflow-hidden border border-gray-700/50"
+                >
+                  <div className="h-48 relative">
+                    <OptimizedImage
+                      src={event.image}
+                      alt={event.title}
+                      className="w-full h-full"
+                      aspectRatio="auto"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <div className="text-sm text-purple-400 mb-2">{event.date}</div>
+                    <h3 className="text-xl font-bold mb-2">{event.title}</h3>
+                    <p className="text-gray-400 mb-4">{event.location}</p>
+                    <div className="flex items-center text-sm text-gray-400">
+                      <Users className="h-4 w-4 mr-2" />
+                      {event.attendees}+ attending
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -520,12 +631,21 @@ export default function CommunityPage() {
               Connect with AI enthusiasts, share your knowledge, and be part of the future of AI.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link
-                href="/signup"
-                className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg font-medium hover:opacity-90 transition-opacity"
-              >
-                Join Now - It's Free!
-              </Link>
+              {!user ? (
+                <Link
+                  href="/signup"
+                  className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg font-medium hover:opacity-90 transition-opacity"
+                >
+                  Join Now - It's Free!
+                </Link>
+              ) : (
+                <Link
+                  href="/dashboard"
+                  className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg font-medium hover:opacity-90 transition-opacity"
+                >
+                  Go to Dashboard
+                </Link>
+              )}
               <Link
                 href="/about"
                 className="px-8 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors"

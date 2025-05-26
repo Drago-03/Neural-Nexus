@@ -19,7 +19,7 @@ export default function APIPage() {
   const handleGetApiKey = () => {
     if (user) {
       // User is logged in, redirect to dashboard API section
-      router.push('/dashboard?tab=api');
+      router.push('https://www.neuralnexus.biz/dashboard?tab=api');
     } else {
       // User is not logged in, redirect to login page with redirect back to dashboard API section
       router.push('/login?redirect=/dashboard?tab=api');

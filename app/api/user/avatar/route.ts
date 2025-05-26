@@ -81,18 +81,17 @@ export async function POST(req: NextRequest) {
     const filename = `avatar-${session.user.id}-${timestamp}.${fileExtension}`;
     
     // In a real app, you would upload to cloud storage here
-    // For this example, we'll simulate a successful upload and return a fake URL
-    // This would normally be where you'd use Supabase Storage, AWS S3, etc.
+    // For now, we'll use a data URL approach since we don't have cloud storage setup
+    const base64 = buffer.toString('base64');
+    const mimeType = avatarFile.type;
+    const dataUrl = `data:${mimeType};base64,${base64}`;
     
-    // Fake URL for demo purposes - in production replace with actual upload code
-    const avatarUrl = `https://via.placeholder.com/150?text=${encodeURIComponent(session.user.name || 'User')}`;
-    
-    console.log("Generated avatar URL:", avatarUrl);
+    console.log("Generated avatar data URL");
     
     // Update user profile with new avatar URL
     try {
       const success = await UserService.updateUser(session.user.id, {
-        avatar: avatarUrl
+        avatar: dataUrl
       });
       
       if (!success) {
@@ -106,7 +105,7 @@ export async function POST(req: NextRequest) {
       
       return NextResponse.json({
         success: true,
-        avatar: avatarUrl
+        avatar: dataUrl
       });
     } catch (updateError) {
       console.error("Error updating user avatar:", updateError);

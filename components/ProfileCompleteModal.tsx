@@ -111,6 +111,8 @@ export default function ProfileCompleteModal({
         // Don't include the avatar here - it's uploaded separately
       };
 
+      console.log("Sending profile data:", JSON.stringify(sanitizedData));
+
       // Call the API to save profile data
       const response = await fetch('/api/user/profile', {
         method: 'POST',
@@ -118,21 +120,26 @@ export default function ProfileCompleteModal({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(sanitizedData),
+        // Add credentials to ensure cookies are sent
+        credentials: 'include'
       });
       
+      // Get the response data regardless of status
+      const result = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save profile data');
+        console.error("Profile save error:", result);
+        throw new Error(result.error || 'Failed to save profile data');
       }
       
-      const result = await response.json();
+      console.log("Profile save success:", result);
       
       // Call the onComplete callback with the updated user data
       onComplete(result.user);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving profile data:', error);
-      // Could add error handling UI here
-      alert('Failed to save profile data. Please try again.');
+      // Show specific error message if available
+      alert(error.message || 'Failed to save profile data. Please try again.');
     }
   };
   

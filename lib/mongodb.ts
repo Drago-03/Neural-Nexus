@@ -52,77 +52,70 @@ if (!globalWithMongo.mongoConnection) {
  * Uses connection pooling with proper caching for Vercel deployments
  */
 export async function connectToDatabase(): Promise<ConnectionProps> {
-  const now = Date.now();
-  
-  // If we're already in the process of connecting, return the promise
-  if (globalWithMongo.mongoConnection.isConnecting && globalWithMongo.mongoConnection.promise) {
-    return globalWithMongo.mongoConnection.promise;
-  }
-  
-  // If we have a cached client, check if it's still valid
+  // If connection already exists, reuse it
   if (globalWithMongo.mongoConnection.client) {
     try {
       // Check if the connection is still alive with a ping
-      // Only ping if it's been more than 10 seconds since the last connection
-      if (now - globalWithMongo.mongoConnection.lastConnectionTime > 10000) {
-        await globalWithMongo.mongoConnection.client.db("admin").command({ ping: 1 });
-      }
-      
-      // Return the cached connection
-      return { 
-        client: globalWithMongo.mongoConnection.client, 
-        db: globalWithMongo.mongoConnection.client.db(dbName) 
+      await globalWithMongo.mongoConnection.client.db("admin").command({ ping: 1 });
+      console.log('👌 Using existing MongoDB connection');
+      return {
+        client: globalWithMongo.mongoConnection.client,
+        db: globalWithMongo.mongoConnection.client.db(dbName),
       };
     } catch (error) {
-      console.log("🔄 Cached MongoDB connection is stale, reconnecting...");
-      // If ping fails, the connection is dead and we need to reconnect
-      globalWithMongo.mongoConnection.client = null;
+      console.log('🔄 Existing MongoDB connection is stale, reconnecting...');
+      // If ping fails, we'll try to reconnect
     }
   }
 
-  // Validate that we have a URI before proceeding
-  if (!uri) {
-    console.error("⚠️ No MongoDB URI provided. Please set MONGODB_URI environment variable.");
-    throw new Error("MongoDB URI is not configured");
+  // Check for MongoDB URI
+  const MONGODB_URI = process.env.MONGODB_URI;
+  
+  if (!MONGODB_URI) {
+    throw new Error(
+      'Please define the MONGODB_URI environment variable inside .env.local'
+    );
   }
 
-  // Mark that we're connecting
-  globalWithMongo.mongoConnection.isConnecting = true;
-  
-  // Create a connection promise
-  globalWithMongo.mongoConnection.promise = new Promise(async (resolve, reject) => {
+  // Enable retry logic for connection
+  const maxRetries = 3;
+  let retryCount = 0;
+  let lastError: Error | null = null;
+
+  while (retryCount < maxRetries) {
     try {
-      // Create a new MongoClient
-      const client = new MongoClient(uri, options);
-      
-      // Connect to the MongoDB server with retry logic
-      let retries = 3;
-      let connected = false;
-      
-      while (!connected && retries > 0) {
-        try {
-          await client.connect();
-          connected = true;
-        } catch (connectError) {
-          retries--;
-          if (retries === 0) throw connectError;
-          console.log(`Connection attempt failed, retrying... (${retries} attempts left)`);
-          await new Promise(r => setTimeout(r, 1000)); // Wait 1s before retrying
-        }
-      }
-      
-      // Ping the database to confirm connection
-      await client.db("admin").command({ ping: 1 });
-      console.log("🚀 Successfully connected to MongoDB!");
-      
+      console.log(`🔄 Connecting to MongoDB (attempt ${retryCount + 1}/${maxRetries})...`);
+
+      // Connect to MongoDB with optimized options for serverless environments
+      const client = new MongoClient(MONGODB_URI, {
+        serverApi: {
+          version: '1',
+          // Remove apiStrict to allow all operations
+          strict: false,
+          deprecationErrors: true,
+        },
+        maxPoolSize: 10, // Reduce from default 100 for serverless
+        minPoolSize: 0,   // Start with no connections for serverless
+        socketTimeoutMS: 30000, // Increase from default for long-running operations
+        connectTimeoutMS: 10000, // Longer connect timeout
+        retryWrites: true,
+        retryReads: true,
+        maxIdleTimeMS: 45000, // Close idle connections after 45 seconds
+      });
+
+      // Connect to the client
+      await client.connect();
+      console.log('🚀 Successfully connected to MongoDB!');
+
       // Get the database
+      const dbName = process.env.MONGODB_DB || 'neural_nexus';
       const db = client.db(dbName);
       console.log(`✅ Connection successful to database: ${dbName}`);
-      
-      // Cache the client
+
+      // Save the connection
       globalWithMongo.mongoConnection.client = client;
       globalWithMongo.mongoConnection.lastConnectionTime = Date.now();
-      
+
       // Set up event handlers for monitoring the connection
       client.on('serverClosed', () => {
         console.log('MongoDB server connection closed');
@@ -134,19 +127,28 @@ export async function connectToDatabase(): Promise<ConnectionProps> {
         // Don't set client to null here to allow for auto-reconnect
       });
       
-      // Resolve with the client and db
-      resolve({ client, db });
+      // Return the connection
+      return {
+        client,
+        db,
+      };
     } catch (error) {
-      console.error("❌ Connection failed:", error);
-      globalWithMongo.mongoConnection.client = null;
-      reject(new Error(`Failed to connect to the database: ${error instanceof Error ? error.message : 'Unknown error'}`));
-    } finally {
-      globalWithMongo.mongoConnection.isConnecting = false;
-      globalWithMongo.mongoConnection.promise = null;
+      retryCount++;
+      lastError = error as Error;
+      console.error(`❌ MongoDB connection attempt ${retryCount} failed:`, error);
+      
+      if (retryCount < maxRetries) {
+        // Exponential backoff: wait longer between each retry
+        const backoffTime = Math.pow(2, retryCount) * 500; // 1s, 2s, 4s, ...
+        console.log(`⏳ Retrying in ${backoffTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffTime));
+      }
     }
-  });
-  
-  return globalWithMongo.mongoConnection.promise;
+  }
+
+  // If we get here, all retries failed
+  console.error('❌ Failed to connect to MongoDB after multiple retries');
+  throw lastError || new Error('Failed to connect to MongoDB after multiple retries');
 }
 
 /**

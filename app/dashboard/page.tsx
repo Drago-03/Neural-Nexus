@@ -10,7 +10,7 @@ import {
   Plus, Upload, Zap, Users, DollarSign, 
   BarChart2, TrendingUp, Clock, Diamond, Settings,
   Layers, Database, Award, Bookmark, Eye, AlertTriangle,
-  Key, Copy, RefreshCw, Trash2, Code, Lock, Download
+  Key, Copy, RefreshCw, Trash2, Code, Lock, Download, User, Building, Briefcase, MapPin, LinkIcon
 } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -21,7 +21,7 @@ import { CustomerManagement } from '@/components/dashboard/CustomerManagement';
 import ProfileCompleteModal from '@/components/ProfileCompleteModal';
 import { useSession } from 'next-auth/react';
 import { useSupabase } from '@/providers/SupabaseProvider';
-import { User } from '@supabase/supabase-js';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { toast } from 'react-hot-toast';
 
 interface SessionUser {
@@ -92,7 +92,7 @@ const getUserAvatar = (userData: any, session: any): string => {
 };
 
 // Safely access user properties with proper type checking
-const getUserProperty = (session: SessionUser | User | null, property: string, fallback: any = '') => {
+const getUserProperty = (session: SessionUser | SupabaseUser | null, property: string, fallback: any = '') => {
   if (!session) return fallback;
   
   // Handle NextAuth session
@@ -217,12 +217,22 @@ export default function DashboardPage() {
           const userData = await response.json();
           console.log("Loaded user data from database:", userData);
           
-          setUserData(userData);
+          setUserData((prev: any) => ({
+            ...prev,
+            ...userData,
+            profileComplete: userData.profileComplete || false
+          }));
+          
           setHasCompletedProfile(userData.profileComplete || false);
           
-          // Show profile modal if profile is not complete
-          if (!userData.profileComplete) {
+          // Check if we've already shown the profile modal to this user
+          const hasShownProfileModal = localStorage.getItem(`profile_modal_shown_${userId}`);
+          
+          // Only show profile modal if profile is not complete AND we haven't shown it before
+          if (!userData.profileComplete && !hasShownProfileModal) {
             setIsProfileModalOpen(true);
+            // Mark that we've shown the modal to this user
+            localStorage.setItem(`profile_modal_shown_${userId}`, 'true');
           }
           
           // Once we have user data, fetch dashboard data using the new function
@@ -432,6 +442,7 @@ export default function DashboardPage() {
     { id: 'models', label: 'My Models', icon: <Database className="h-4 w-4 mr-2" /> },
     { id: 'sales', label: 'Sales', icon: <DollarSign className="h-4 w-4 mr-2" /> },
     { id: 'customers', label: 'Customers', icon: <Users className="h-4 w-4 mr-2" /> },
+    { id: 'profile', label: 'Profile', icon: <User className="h-4 w-4 mr-2" /> },
     { id: 'api', label: 'API Keys', icon: <Key className="h-4 w-4 mr-2" /> },
     { id: 'settings', label: 'Settings', icon: <Settings className="h-4 w-4 mr-2" /> }
   ];
@@ -673,6 +684,139 @@ export default function DashboardPage() {
             
             {activeTab === 'customers' && (
               <CustomerManagement />
+            )}
+            
+            {activeTab === 'profile' && (
+              <div className="space-y-6">
+                <AnimatedCard className="p-6">
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {/* Profile Image & Basic Info */}
+                    <div className="flex flex-col items-center md:items-start md:w-1/3">
+                      <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-800 mb-4">
+                        {userData?.avatar ? (
+                          <img 
+                            src={userData.avatar} 
+                            alt={userData.name || 'User'} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-purple-900/30">
+                            <User className="w-12 h-12 text-purple-400" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <h2 className="text-2xl font-bold mb-1 text-center md:text-left">{userData?.name || 'Your Name'}</h2>
+                      <p className="text-gray-400 mb-4 text-center md:text-left">{userData?.email || 'email@example.com'}</p>
+                      
+                      <AnimatedButton 
+                        variant="outline" 
+                        size="sm"
+                        className="mb-4 w-full md:w-auto"
+                        onClick={() => setIsProfileModalOpen(true)}
+                      >
+                        Edit Profile
+                      </AnimatedButton>
+                      
+                      {userData?.organization && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <Building className="w-4 h-4 text-gray-400" />
+                          <span>{userData.organization}</span>
+                        </div>
+                      )}
+                      
+                      {userData?.jobTitle && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <Briefcase className="w-4 h-4 text-gray-400" />
+                          <span>{userData.jobTitle}</span>
+                        </div>
+                      )}
+                      
+                      {userData?.location && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <MapPin className="w-4 h-4 text-gray-400" />
+                          <span>{userData.location}</span>
+                        </div>
+                      )}
+                      
+                      {userData?.website && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <LinkIcon className="w-4 h-4 text-gray-400" />
+                          <a href={userData.website} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">
+                            {userData.website.replace(/^https?:\/\//, '')}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Bio, Skills & Interests */}
+                    <div className="md:w-2/3">
+                      <h3 className="text-lg font-semibold mb-2">Bio</h3>
+                      <p className="text-gray-300 mb-6">
+                        {userData?.bio || 'No bio information provided yet. Edit your profile to add a bio.'}
+                      </p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3">Skills</h3>
+                          {userData?.skills && userData.skills.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {userData.skills.map((skill, index) => (
+                                <span 
+                                  key={index} 
+                                  className="px-3 py-1 bg-purple-900/30 border border-purple-900/50 rounded-full text-sm"
+                                >
+                                  {skill}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-gray-400 text-sm">No skills added yet</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3">Interests</h3>
+                          {userData?.interests && userData.interests.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {userData.interests.map((interest, index) => (
+                                <span 
+                                  key={index} 
+                                  className="px-3 py-1 bg-blue-900/30 border border-blue-900/50 rounded-full text-sm"
+                                >
+                                  {interest}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-gray-400 text-sm">No interests added yet</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <h3 className="text-lg font-semibold mb-3">Activity Stats</h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div className="bg-white/5 rounded-lg p-3">
+                          <div className="text-2xl font-bold text-purple-400">{myModels.length}</div>
+                          <div className="text-sm text-gray-400">Models</div>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3">
+                          <div className="text-2xl font-bold text-blue-400">{activities.filter(a => a.type === 'comment').length}</div>
+                          <div className="text-sm text-gray-400">Comments</div>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3">
+                          <div className="text-2xl font-bold text-green-400">{activities.filter(a => a.type === 'download').length}</div>
+                          <div className="text-sm text-gray-400">Downloads</div>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3">
+                          <div className="text-2xl font-bold text-pink-400">{activities.filter(a => a.type === 'like').length}</div>
+                          <div className="text-sm text-gray-400">Likes</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </AnimatedCard>
+              </div>
             )}
             
             {activeTab === 'api' && (

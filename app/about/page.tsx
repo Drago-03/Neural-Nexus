@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
@@ -14,13 +14,82 @@ import {
   ArrowRight,
   Github,
   Linkedin,
-  Mail
+  Mail,
+  MessageSquare,
+  Menu
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import AnimatedLogo from "@/components/AnimatedLogo";
 
+// Platform stats interface
+interface PlatformStats {
+  activeUsers: number;
+  monthlyGrowth: number;
+  models: number;
+  countries: number;
+  apiCalls: number;
+  lastUpdated?: string;
+}
+
 export default function AboutPage() {
+  // Set default stats to show immediately while API call is in progress
+  const [stats, setStats] = useState<PlatformStats>({
+    activeUsers: 100,
+    monthlyGrowth: 40,
+    models: 50,
+    countries: 15,
+    apiCalls: 0
+  });
+  const [loading, setLoading] = useState(false);
+
+  const fetchPlatformStats = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/platform-stats');
+      
+      if (!response.ok) {
+        console.error('Failed to fetch platform stats:', response.statusText);
+        return; // Keep showing default stats
+      }
+
+      const data = await response.json();
+      
+      // Ensure required values meet specified criteria
+      const updatedStats = {
+        ...data,
+        monthlyGrowth: 40, // Always keep at 40%
+        countries: Math.max(data.countries || 15, 15) // Ensure at least 15 countries
+      };
+      
+      setStats(updatedStats);
+    } catch (error) {
+      console.error('Error fetching platform stats:', error);
+      // Keep showing default stats
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Fetch stats immediately
+    fetchPlatformStats();
+    
+    // Set up interval to refresh stats every minute
+    const intervalId = setInterval(fetchPlatformStats, 60000);
+    
+    return () => clearInterval(intervalId);
+  }, [fetchPlatformStats]);
+
+  function formatNumber(num: number): string {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M+`;
+    } else if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K+`;
+    }
+    return `${num}+`;
+  }
+
   // Team members data
   const teamMembers = [
     {
@@ -192,6 +261,87 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* Stats Section */}
+      <section className="py-16 px-4 bg-gray-900/50">
+        <div className="container mx-auto">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h2 
+              className="text-3xl font-bold mb-4" 
+              style={{ opacity: 0, transform: 'translateY(-20px)' }}
+            >
+              Growing Fast
+            </h2>
+            <p 
+              className="text-gray-300 text-lg" 
+              style={{ opacity: 0 }}
+            >
+              Join thousands of developers and creators already using Neural Nexus
+            </p>
+          </div>
+          <div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" 
+            style={{ opacity: 0, transform: 'translateY(20px)' }}
+          >
+            <div className="bg-gradient-to-br from-purple-900/40 to-purple-600/20 rounded-xl p-6 border border-purple-500/30">
+              <h3 className="text-sm uppercase tracking-wider text-purple-400 mb-1">Active Users</h3>
+              <div className="text-4xl font-bold mb-1">
+                {loading ? (
+                  <div className="h-10 w-24 bg-purple-800/50 animate-pulse rounded"></div>
+                ) : (
+                  formatNumber(stats.activeUsers)
+                )}
+              </div>
+              <p className="text-sm text-gray-400 flex items-center">
+                <Zap className="h-4 w-4 mr-1 text-green-400" />
+                Growing {stats.monthlyGrowth}% monthly
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-blue-900/40 to-blue-600/20 rounded-xl p-6 border border-blue-500/30">
+              <h3 className="text-sm uppercase tracking-wider text-blue-400 mb-1">Countries</h3>
+              <div className="text-4xl font-bold mb-1">
+                {loading ? (
+                  <div className="h-10 w-16 bg-blue-800/50 animate-pulse rounded"></div>
+                ) : (
+                  `${stats.countries}+`
+                )}
+              </div>
+              <p className="text-sm text-gray-400 flex items-center">
+                <Globe className="h-4 w-4 mr-1 text-blue-400" />
+                Global community
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-pink-900/40 to-pink-600/20 rounded-xl p-6 border border-pink-500/30">
+              <h3 className="text-sm uppercase tracking-wider text-pink-400 mb-1">Models</h3>
+              <div className="text-4xl font-bold mb-1">
+                {loading ? (
+                  <div className="h-10 w-24 bg-pink-800/50 animate-pulse rounded"></div>
+                ) : (
+                  formatNumber(stats.models)
+                )}
+              </div>
+              <p className="text-sm text-gray-400 flex items-center">
+                <Sparkles className="h-4 w-4 mr-1 text-pink-400" />
+                Increasing daily
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-green-900/40 to-green-600/20 rounded-xl p-6 border border-green-500/30">
+              <h3 className="text-sm uppercase tracking-wider text-green-400 mb-1">API Calls</h3>
+              <div className="text-4xl font-bold mb-1">
+                {loading ? (
+                  <div className="h-10 w-24 bg-green-800/50 animate-pulse rounded"></div>
+                ) : (
+                  formatNumber(stats.apiCalls)
+                )}
+              </div>
+              <p className="text-sm text-gray-400 flex items-center">
+                <Zap className="h-4 w-4 mr-1 text-yellow-400" />
+                Processing millions of requests
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Mission Section */}
       <section className="py-16 px-4 bg-gray-900/50">
         <div className="container mx-auto">
@@ -213,15 +363,15 @@ export default function AboutPage() {
               <div className="flex items-center gap-4 text-lg">
                 <div className="flex items-center gap-2">
                   <span className="h-3 w-3 bg-purple-500 rounded-full"></span>
-                  <span className="font-medium">32k+ Models</span>
+                  <span className="font-medium">{formatNumber(stats.models)} Models</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="h-3 w-3 bg-blue-500 rounded-full"></span>
-                  <span className="font-medium">15k+ Creators</span>
+                  <span className="font-medium">{formatNumber(stats.activeUsers)} Creators</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="h-3 w-3 bg-pink-500 rounded-full"></span>
-                  <span className="font-medium">120M+ API Calls</span>
+                  <span className="font-medium">{formatNumber(stats.apiCalls)} API Calls</span>
                 </div>
               </div>
             </div>
@@ -255,13 +405,25 @@ export default function AboutPage() {
               {/* Floating cards */}
               <div className="absolute -top-6 -left-6 bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg border border-gray-700/50 shadow-xl max-w-[180px]">
                 <div className="text-sm font-medium mb-1">Active Users</div>
-                <div className="text-2xl font-bold text-purple-400">250k+</div>
-                <div className="text-xs text-gray-400">Growing 25% monthly</div>
+                <div className="text-2xl font-bold text-purple-400">
+                  {loading ? (
+                    <div className="h-7 w-16 bg-purple-800/50 animate-pulse rounded"></div>
+                  ) : (
+                    formatNumber(stats.activeUsers)
+                  )}
+                </div>
+                <div className="text-xs text-gray-400">Growing {stats.monthlyGrowth}% monthly</div>
               </div>
               
               <div className="absolute -bottom-6 -right-6 bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg border border-gray-700/50 shadow-xl max-w-[180px]">
                 <div className="text-sm font-medium mb-1">Countries</div>
-                <div className="text-2xl font-bold text-blue-400">120+</div>
+                <div className="text-2xl font-bold text-blue-400">
+                  {loading ? (
+                    <div className="h-7 w-10 bg-blue-800/50 animate-pulse rounded"></div>
+                  ) : (
+                    `${stats.countries}+`
+                  )}
+                </div>
                 <div className="text-xs text-gray-400">Global community</div>
               </div>
             </div>

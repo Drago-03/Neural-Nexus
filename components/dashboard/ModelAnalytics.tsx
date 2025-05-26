@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, Download, Star, TrendingUp, Activity, Clock, Filter, ChevronDown, MoreHorizontal, Search, Plus, ArrowUpDown, BarChart2 } from 'lucide-react';
+import { Eye, Download, Star, TrendingUp, Activity, Clock, Filter, ChevronDown, MoreHorizontal, Search, Plus, ArrowUpDown, BarChart2, Upload } from 'lucide-react';
+import Link from 'next/link';
 import { AnimatedButton } from '../ui/animated-button';
 import { AnimatedCard } from '../ui/animated-card';
 import { useSession } from 'next-auth/react';
@@ -23,7 +24,7 @@ interface ModelData {
   status?: 'active' | 'pending' | 'rejected';
 }
 
-export function ModelAnalytics() {
+export const ModelAnalytics = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [models, setModels] = useState<ModelData[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -70,7 +71,7 @@ export function ModelAnalytics() {
       fetchModels();
     }
   }, [session]);
-
+  
   // Filter and sort models
   const filteredModels = models
     .filter(model => {
@@ -137,17 +138,19 @@ export function ModelAnalytics() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Your AI Models</h2>
-          <p className="text-gray-400">Manage and track performance of your AI models</p>
+          <h2 className="text-2xl font-bold">Your Models</h2>
+          <p className="text-gray-400">Manage, track, and analyze your AI models</p>
         </div>
         
+        <Link href="/your-models">
         <AnimatedButton
           variant="primary"
           size="sm"
-          className="flex-shrink-0"
+            icon={<Upload className="h-4 w-4 mr-2" />}
         >
           Upload New Model
         </AnimatedButton>
+        </Link>
       </div>
       
       {/* Stats Overview */}
@@ -217,9 +220,9 @@ export function ModelAnalytics() {
       <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
         <div className="relative flex-grow max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Search models..." 
+          <input
+            type="text"
+            placeholder="Search models..."
             className="pl-10 pr-4 py-2 w-full bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -304,7 +307,7 @@ export function ModelAnalytics() {
                       {sortBy === 'rating' && (
                         <ArrowUpDown className="h-3 w-3" />
                       )}
-                    </div>
+              </div>
                   </th>
                   <th 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer"
@@ -315,7 +318,7 @@ export function ModelAnalytics() {
                       {sortBy === 'revenue' && (
                         <ArrowUpDown className="h-3 w-3" />
                       )}
-                    </div>
+            </div>
                   </th>
                   <th 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer"
@@ -326,7 +329,7 @@ export function ModelAnalytics() {
                       {sortBy === 'date' && (
                         <ArrowUpDown className="h-3 w-3" />
                       )}
-                    </div>
+              </div>
                   </th>
                 </tr>
               </thead>
@@ -346,13 +349,13 @@ export function ModelAnalytics() {
                       <div className="flex items-center">
                         <Eye className="h-4 w-4 text-purple-400 mr-2" />
                         {model.views.toLocaleString()}
-                      </div>
+                </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <Download className="h-4 w-4 text-blue-400 mr-2" />
                         {model.downloads.toLocaleString()}
-                      </div>
+                </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -364,9 +367,9 @@ export function ModelAnalytics() {
                               fill={i < Math.floor(model.rating) ? 'currentColor' : 'none'}
                             />
                           ))}
-                        </div>
+                </div>
                         {model.rating.toFixed(1)}
-                      </div>
+              </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <p>${model.revenue.toLocaleString()}</p>
@@ -380,7 +383,7 @@ export function ModelAnalytics() {
                 ))}
               </tbody>
             </table>
-          </div>
+              </div>
         ) : (
           <div className="py-12 text-center">
             <div className="mx-auto w-16 h-16 bg-gray-800/50 rounded-full flex items-center justify-center mb-4">
@@ -399,7 +402,7 @@ export function ModelAnalytics() {
             </AnimatedButton>
           </div>
         )}
-      </AnimatedCard>
+        </AnimatedCard>
     </div>
   );
 } 
