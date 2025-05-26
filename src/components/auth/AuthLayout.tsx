@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import React, { ReactNode, useState } from 'react';
-import BrainAnimation from '@/src/components/animations/BrainAnimation'; // Assuming this is an animated component
+import BrainAnimation from '@/src/components/animations/BrainAnimation'; 
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -15,7 +15,7 @@ interface AuthLayoutProps {
   mode: 'signin' | 'signup';
 }
 
-// Animation variants for the main container
+
 const containerVariants = {
   hidden: { opacity: 0, scale: 0.98 },
   visible: {
@@ -25,24 +25,24 @@ const containerVariants = {
       duration: 0.6,
       ease: "easeOut",
       when: "beforeChildren",
-      staggerChildren: 0.1, // Stagger children inside the main container
+      staggerChildren: 0.1, 
     },
   },
 };
 
-// Animation variants for child elements (left and right panels)
+
 const panelVariants = {
   hidden: { opacity: 0, x: 50 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" } },
 };
 
-// Animation variants for header and back button
+
 const headerVariants = {
   hidden: { opacity: 0, y: -20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
-// Define itemVariants for general staggered children within specific sections
+
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
@@ -56,7 +56,7 @@ const itemVariants = {
   },
 };
 
-// Animation variants for the feature cards
+
 const cardVariants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
@@ -71,7 +71,7 @@ const cardVariants = {
   hover: {
     scale: 1.05,
     boxShadow: "0 10px 20px rgba(0,0,0,0.4)",
-    borderColor: "rgba(129, 140, 248, 0.5)", // Tailwind blue-400 equivalent
+    borderColor: "rgba(129, 140, 248, 0.5)",
     transition: { type: "spring", stiffness: 300, damping: 15 },
   },
 };
@@ -88,11 +88,11 @@ export default function AuthLayout({
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex flex-col relative overflow-hidden">
-      {/* Background radial gradient for depth */}
+      
       <div className="absolute inset-0 z-0 radial-gradient-auth"></div>
-      {/* Subtle grid pattern */}
+  
       <div className="absolute inset-0 z-0 bg-[url('/grid.svg')] bg-center opacity-5"></div>
-      {/* Decorative blobs - animated */}
+ 
       <motion.div
         className="absolute top-1/4 left-1/4 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl animate-blob-pulse"
         initial={{ scale: 0.8, rotate: 0 }}
@@ -122,7 +122,7 @@ export default function AuthLayout({
             <motion.span
               className="mr-2"
               initial={{ x: 0 }}
-              whileHover={{ x: -3 }} // Arrow slight movement on hover
+              whileHover={{ x: -3 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
               <ArrowLeft className="h-5 w-5" />
@@ -135,7 +135,7 @@ export default function AuthLayout({
       <motion.div
         initial="hidden"
         animate="visible"
-        variants={containerVariants} // Apply container variants to the main flex wrapper
+        variants={containerVariants} 
         className="flex-1 flex flex-col md:flex-row items-stretch relative z-10 p-4 md:p-8"
       >
         {/* Left side - Content */}
