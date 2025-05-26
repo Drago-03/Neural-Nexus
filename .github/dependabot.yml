@@ -1,0 +1,119 @@
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    # Group related dependencies
+    groups:
+      react:
+        patterns:
+          - "react*"
+          - "@types/react*"
+      next:
+        patterns:
+          - "next*"
+          - "@next/*"
+      babel:
+        patterns:
+          - "@babel/*"
+          - "babel*"
+      eslint:
+        patterns:
+          - "eslint*"
+          - "@eslint/*"
+      typescript:
+        patterns:
+          - "typescript*"
+          - "@types/*"
+      tailwind:
+        patterns:
+          - "tailwind*"
+          - "@tailwindcss/*"
+      radix:
+        patterns:
+          - "@radix-ui/*"
+      web3:
+        patterns:
+          - "web3*"
+          - "@web3*"
+          - "ethers"
+          - "viem"
+          - "wagmi"
+      coinbase:
+        patterns:
+          - "@coinbase/*"
+      supabase:
+        patterns:
+          - "@supabase/*"
+      vercel:
+        patterns:
+          - "@vercel/*"
+    # Increase the number of open pull requests for version updates
+    open-pull-requests-limit: 10
+    # Assignees for dependency update PRs
+    assignees:
+      - "palpr"
+    # Reviewers for dependency update PRs  
+    reviewers:
+      - "palpr"
+    # Add labels to dependency update PRs
+    labels:
+      - "dependencies"
+      - "automated"
+    # Commit message preferences
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    # Customize PR titles and body
+    pull-request-branch-name:
+      separator: "/"
+    # Security updates
+    insecure-external-code-execution: "allow"
+    # Allow Dependabot to update files outside the directory
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    # Ignore specific dependencies if needed
+    ignore:
+      # Ignore major version updates for core dependencies
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    labels:
+      - "github-actions"
+      - "dependencies"
+      - "automated"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
+  # Enable version updates for Docker if you have Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    labels:
+      - "docker"
+      - "dependencies"
+      - "automated"
+    commit-message:
+      prefix: "docker"
+      include: "scope"

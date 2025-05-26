@@ -1,0 +1,293 @@
+name: Code Quality Checks
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Monday at 2 AM
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # Job 1: SonarCloud Analysis
+  sonarcloud:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: |
+          # Add test script when tests are available
+          echo "Test coverage will be generated here"
+        continue-on-error: true
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=neural-nexus
+            -Dsonar.organization=your-org
+            -Dsonar.sources=app,components,lib,utils
+            -Dsonar.tests=__tests__,test
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=**/*.test.*,**/*.spec.*,**/node_modules/**
+            -Dsonar.cpd.exclusions=**/*.test.*,**/*.spec.*
+
+  # Job 2: CodeQL Security Analysis
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      matrix:
+        language: [ 'javascript' ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  # Job 3: Dependency Vulnerability Scan
+  dependency-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate --production
+
+      - name: Snyk vulnerability scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=medium --file=package.json
+
+      - name: Upload Snyk results to GitHub
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+
+  # Job 4: Code Duplication Detection
+  duplication-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install jscpd
+        run: npm install -g jscpd
+
+      - name: Run duplication detection
+        run: |
+          jscpd app components lib utils --threshold 5 --min-lines 10 --min-tokens 50 --format json --output ./duplication-report.json
+        continue-on-error: true
+
+      - name: Comment duplication results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            try {
+              const report = JSON.parse(fs.readFileSync('./duplication-report.json', 'utf8'));
+              const duplicates = report.duplicates || [];
+              
+              if (duplicates.length > 0) {
+                let comment = `## 🔍 Code Duplication Report\n\n`;
+                comment += `Found ${duplicates.length} duplicate code blocks:\n\n`;
+                
+                duplicates.slice(0, 5).forEach((dup, index) => {
+                  comment += `**${index + 1}.** ${dup.lines} lines duplicated:\n`;
+                  comment += `- \`${dup.firstFile.name}:${dup.firstFile.start}-${dup.firstFile.end}\`\n`;
+                  comment += `- \`${dup.secondFile.name}:${dup.secondFile.start}-${dup.secondFile.end}\`\n\n`;
+                });
+                
+                if (duplicates.length > 5) {
+                  comment += `... and ${duplicates.length - 5} more duplicates.\n\n`;
+                }
+                
+                comment += `Consider refactoring to reduce code duplication.`;
+                
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: comment
+                });
+              }
+            } catch (error) {
+              console.log('No duplication report found or error reading report');
+            }
+
+  # Job 5: Test Coverage Analysis
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install test dependencies
+        run: npm install --save-dev jest @testing-library/react @testing-library/jest-dom
+        continue-on-error: true
+
+      - name: Run tests with coverage
+        run: |
+          # This will run when tests are available
+          echo "Tests and coverage will be implemented here"
+          # npx jest --coverage --coverageReporters=text --coverageReporters=lcov
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Coverage enforcement
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            // This will check coverage when tests are implemented
+            const minCoverage = 70;
+            console.log(`Minimum coverage requirement: ${minCoverage}%`);
+            
+            // Add actual coverage checking logic here when tests are available
+
+  # Job 6: Performance Budget Check
+  performance-budget:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for production
+        run: npm run build
+        env:
+          SKIP_ENV_VALIDATION: true
+
+      - name: Install bundlewatch
+        run: npm install -g bundlewatch
+
+      - name: Check bundle size
+        run: |
+          echo "Checking bundle size against performance budget..."
+          # Configure bundlewatch with performance budgets
+          npx bundlewatch --config bundlewatch.config.json
+        continue-on-error: true
+
+  # Job 7: Weekly Health Check
+  health-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run comprehensive health check
+        run: |
+          echo "🏥 Weekly Health Check Report" > health-report.md
+          echo "================================" >> health-report.md
+          echo "" >> health-report.md
+          
+          echo "## Dependencies" >> health-report.md
+          npm audit --audit-level=low >> health-report.md 2>&1 || echo "Some dependencies have vulnerabilities" >> health-report.md
+          echo "" >> health-report.md
+          
+          echo "## Outdated Packages" >> health-report.md
+          npm outdated >> health-report.md 2>&1 || echo "Some packages are outdated" >> health-report.md
+          echo "" >> health-report.md
+          
+          echo "## Build Status" >> health-report.md
+          npm run build >> health-report.md 2>&1 && echo "✅ Build successful" >> health-report.md || echo "❌ Build failed" >> health-report.md
+          
+          cat health-report.md
+
+      - name: Create health check issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('health-report.md', 'utf8');
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Weekly Health Check - ${new Date().toISOString().split('T')[0]}`,
+              body: report,
+              labels: ['health-check', 'automated', 'maintenance']
+            });

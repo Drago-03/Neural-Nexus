@@ -1,0 +1,152 @@
+name: Auto-Merge Pull Requests
+
+on:
+  pull_request:
+    types: [labeled, unlabeled, synchronize]
+  pull_request_review:
+    types: [submitted]
+  status: {}
+  check_suite:
+    types: [completed]
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.pull_request.draft == false &&
+      contains(github.event.pull_request.labels.*.name, 'ready-to-merge') &&
+      !contains(github.event.pull_request.labels.*.name, 'WIP') &&
+      !contains(github.event.pull_request.labels.*.name, 'blocked') &&
+      !contains(github.event.pull_request.labels.*.name, 'do-not-merge')
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Wait for status checks
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-name: 'CI/CD Pipeline'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success
+
+      - name: Get PR details
+        id: pr-details
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            const { data: checks } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pr.head.sha
+            });
+
+            // Check for approvals
+            const approvedReviews = reviews.filter(
+              review => review.state === 'APPROVED'
+            );
+
+            // Check for blocking reviews
+            const requestChanges = reviews.filter(
+              review => review.state === 'CHANGES_REQUESTED'
+            );
+
+            // Check if all required checks pass
+            const allChecksPassed = checks.check_runs.every(
+              check => check.conclusion === 'success' || check.conclusion === 'neutral'
+            );
+
+            core.setOutput('approvals', approvedReviews.length);
+            core.setOutput('changes_requested', requestChanges.length);
+            core.setOutput('checks_passed', allChecksPassed);
+            core.setOutput('mergeable', pr.mergeable);
+            core.setOutput('merged', pr.merged);
+
+      - name: Enable auto-merge
+        if: >
+          steps.pr-details.outputs.approvals >= 1 &&
+          steps.pr-details.outputs.changes_requested == 0 &&
+          steps.pr-details.outputs.checks_passed == 'true' &&
+          steps.pr-details.outputs.mergeable == 'true' &&
+          steps.pr-details.outputs.merged == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.pulls.enableAutoMerge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              merge_method: 'squash'
+            });
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '🚀 Auto-merge enabled! This PR will be automatically merged when all conditions are met.'
+            });
+
+      - name: Comment on insufficient conditions
+        if: >
+          steps.pr-details.outputs.approvals < 1 ||
+          steps.pr-details.outputs.changes_requested > 0 ||
+          steps.pr-details.outputs.checks_passed != 'true' ||
+          steps.pr-details.outputs.mergeable != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let conditions = [];
+            
+            if (parseInt('${{ steps.pr-details.outputs.approvals }}') < 1) {
+              conditions.push('✗ Requires at least 1 approval');
+            } else {
+              conditions.push('✓ Has required approvals');
+            }
+            
+            if (parseInt('${{ steps.pr-details.outputs.changes_requested }}') > 0) {
+              conditions.push('✗ Has requested changes that need to be addressed');
+            } else {
+              conditions.push('✓ No requested changes');
+            }
+            
+            if ('${{ steps.pr-details.outputs.checks_passed }}' !== 'true') {
+              conditions.push('✗ All status checks must pass');
+            } else {
+              conditions.push('✓ All status checks passing');
+            }
+            
+            if ('${{ steps.pr-details.outputs.mergeable }}' !== 'true') {
+              conditions.push('✗ Has merge conflicts that need to be resolved');
+            } else {
+              conditions.push('✓ No merge conflicts');
+            }
+
+            const body = `## Auto-merge Status
+            
+            This PR has the \`ready-to-merge\` label but cannot be auto-merged yet.
+            
+            **Current Status:**
+            ${conditions.join('\n')}
+            
+            Once all conditions are met, this PR will be automatically merged.`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
