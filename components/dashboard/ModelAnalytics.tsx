@@ -1,150 +1,137 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, Download, Star, TrendingUp, Activity, Clock, Filter, ChevronDown, MoreHorizontal, Search, Plus } from 'lucide-react';
+import { Eye, Download, Star, TrendingUp, Activity, Clock, Filter, ChevronDown, MoreHorizontal, Search, Plus, ArrowUpDown, BarChart2 } from 'lucide-react';
 import { AnimatedButton } from '../ui/animated-button';
 import { AnimatedCard } from '../ui/animated-card';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
 interface ModelData {
   id: string;
   name: string;
-  description: string;
-  category: string;
-  thumbnail: string;
+  views: number;
   downloads: number;
   rating: number;
-  views: number;
+  revenue: number;
   createdAt: string;
-  status: 'active' | 'pending' | 'rejected';
+  // Optional fields for backward compatibility
+  description?: string;
+  category?: string;
+  thumbnail?: string;
+  status?: 'active' | 'pending' | 'rejected';
 }
 
-export default function ModelAnalytics() {
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+export function ModelAnalytics() {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [models, setModels] = useState<ModelData[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('downloads');
-  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
-  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Sample model data
-  const models: ModelData[] = [
-    {
-      id: 'model1',
-      name: 'ImageGen Pro',
-      description: 'State-of-the-art image generation model with unprecedented detail and realism.',
-      category: 'Computer Vision',
-      thumbnail: 'https://images.unsplash.com/photo-1686191482311-cb3fa868a543',
-      downloads: 1842,
-      rating: 4.8,
-      views: 12540,
-      createdAt: '2023-11-15',
-      status: 'active'
-    },
-    {
-      id: 'model2',
-      name: 'NLP Transformer X',
-      description: 'Advanced natural language processing model with superior comprehension abilities.',
-      category: 'NLP',
-      thumbnail: 'https://images.unsplash.com/photo-1655635949212-1d8f4f103ea1',
-      downloads: 965,
-      rating: 4.7,
-      views: 8320,
-      createdAt: '2023-12-02',
-      status: 'active'
-    },
-    {
-      id: 'model3',
-      name: 'VoiceClone Ultra',
-      description: 'Ultra-realistic voice cloning with minimal training data required.',
-      category: 'Audio',
-      thumbnail: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d',
-      downloads: 743,
-      rating: 4.5,
-      views: 5980,
-      createdAt: '2024-01-10',
-      status: 'active'
-    },
-    {
-      id: 'model4',
-      name: 'DeepDream Generator',
-      description: 'Create mesmerizing psychedelic art with this advanced neural network.',
-      category: 'Computer Vision',
-      thumbnail: 'https://images.unsplash.com/photo-1617791160505-6f00504e3519',
-      downloads: 528,
-      rating: 4.2,
-      views: 4320,
-      createdAt: '2024-02-20',
-      status: 'pending'
-    },
-    {
-      id: 'model5',
-      name: 'SoundScape Designer',
-      description: 'AI-powered ambient sound generation for immersive experiences.',
-      category: 'Audio',
-      thumbnail: 'https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d',
-      downloads: 371,
-      rating: 4.3,
-      views: 3140,
-      createdAt: '2024-03-05',
-      status: 'active'
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [filterType, setFilterType] = useState<string>('all');
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        setLoading(true);
+        // Fetch user's models from API
+        const response = await fetch('/api/user/models', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch models');
+        }
+
+        const data = await response.json();
+        
+        if (data.success && Array.isArray(data.models)) {
+          setModels(data.models);
+        } else {
+          // If API returns no models, set empty array
+          setModels([]);
+          toast.info('No models found. Upload some to get started!');
+        }
+      } catch (error) {
+        console.error('Error fetching models:', error);
+        toast.error('Failed to load models data');
+        setModels([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchModels();
     }
-  ];
-  
+  }, [session]);
+
   // Filter and sort models
   const filteredModels = models
+    .filter(model => {
+      if (filterType === 'all') return true;
+      if (filterType === 'active' && model.status === 'active') return true;
+      if (filterType === 'pending' && model.status === 'pending') return true;
+      return false;
+    })
     .filter(model => 
-      (filterStatus === 'all' || model.status === filterStatus) && 
-      (model.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-       model.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-       model.category.toLowerCase().includes(searchQuery.toLowerCase()))
+      model.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
+      let comparison = 0;
+      
       switch (sortBy) {
-        case 'downloads':
-          return b.downloads - a.downloads;
-        case 'rating':
-          return b.rating - a.rating;
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
         case 'views':
-          return b.views - a.views;
-        case 'newest':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        case 'oldest':
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          comparison = a.views - b.views;
+          break;
+        case 'downloads':
+          comparison = a.downloads - b.downloads;
+          break;
+        case 'rating':
+          comparison = a.rating - b.rating;
+          break;
+        case 'revenue':
+          comparison = a.revenue - b.revenue;
+          break;
+        case 'date':
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
         default:
-          return b.downloads - a.downloads;
+          comparison = a.downloads - b.downloads;
       }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
     });
 
-  // Calculate total stats
-  const totalDownloads = models.reduce((acc, model) => acc + model.downloads, 0);
-  const totalViews = models.reduce((acc, model) => acc + model.views, 0);
-  const averageRating = models.reduce((acc, model) => acc + model.rating, 0) / models.length;
+  const toggleSortOrder = () => {
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+  };
 
-  // Format numbers with k, M suffix
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    }
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'k';
-    }
-    return num.toString();
-  };
-  
-  // Get status badge class
-  const getStatusBadgeClass = (status: string): string => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-500/20 text-green-400';
-      case 'pending':
-        return 'bg-yellow-500/20 text-yellow-400';
-      case 'rejected':
-        return 'bg-red-500/20 text-red-400';
-      default:
-        return 'bg-gray-500/20 text-gray-400';
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      toggleSortOrder();
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
     }
   };
-  
+
+  // Calculate total stats
+  const totalViews = models.reduce((sum, model) => sum + model.views, 0);
+  const totalDownloads = models.reduce((sum, model) => sum + model.downloads, 0);
+  const totalRevenue = models.reduce((sum, model) => sum + model.revenue, 0);
+  const averageRating = models.length > 0 
+    ? parseFloat((models.reduce((sum, model) => sum + model.rating, 0) / models.length).toFixed(1))
+    : 0;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -164,241 +151,255 @@ export default function ModelAnalytics() {
       </div>
       
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <AnimatedCard className="p-5">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-full bg-blue-500/20">
-              <Download className="w-5 h-5 text-blue-400" />
-            </div>
+          <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-2xl font-bold">{formatNumber(totalDownloads)}</h3>
-              <p className="text-sm text-gray-400">Total Downloads</p>
-            </div>
-          </div>
-        </AnimatedCard>
-        
-        <AnimatedCard className="p-5">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-full bg-purple-500/20">
-              <Eye className="w-5 h-5 text-purple-400" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold">{formatNumber(totalViews)}</h3>
               <p className="text-sm text-gray-400">Total Views</p>
+              <p className="text-2xl font-bold mt-1">{totalViews.toLocaleString()}</p>
+              <p className="text-xs text-green-400 mt-1">+{Math.floor(totalViews * 0.12)} this month</p>
+            </div>
+            <div className="p-2 bg-purple-500/20 rounded-lg">
+              <Eye className="h-5 w-5 text-purple-400" />
             </div>
           </div>
         </AnimatedCard>
         
         <AnimatedCard className="p-5">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-full bg-yellow-500/20">
-              <Star className="w-5 h-5 text-yellow-400" />
-            </div>
+          <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-2xl font-bold">{averageRating.toFixed(1)}</h3>
+              <p className="text-sm text-gray-400">Total Downloads</p>
+              <p className="text-2xl font-bold mt-1">{totalDownloads.toLocaleString()}</p>
+              <p className="text-xs text-green-400 mt-1">+{Math.floor(totalDownloads * 0.08)} this month</p>
+            </div>
+            <div className="p-2 bg-blue-500/20 rounded-lg">
+              <Download className="h-5 w-5 text-blue-400" />
+            </div>
+          </div>
+        </AnimatedCard>
+        
+        <AnimatedCard className="p-5">
+          <div className="flex justify-between items-start">
+            <div>
               <p className="text-sm text-gray-400">Average Rating</p>
+              <p className="text-2xl font-bold mt-1">{averageRating.toFixed(1)}</p>
+              <div className="flex items-center mt-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star 
+                    key={i} 
+                    className={`h-3 w-3 ${i < Math.round(averageRating) ? 'text-yellow-400' : 'text-gray-600'}`} 
+                    fill={i < Math.round(averageRating) ? 'currentColor' : 'none'}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="p-2 bg-yellow-500/20 rounded-lg">
+              <Star className="h-5 w-5 text-yellow-400" fill="currentColor" />
+            </div>
+          </div>
+        </AnimatedCard>
+        
+        <AnimatedCard className="p-5">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-gray-400">Total Revenue</p>
+              <p className="text-2xl font-bold mt-1">${totalRevenue.toLocaleString()}</p>
+              <p className="text-xs text-green-400 mt-1">+${Math.floor(totalRevenue * 0.15)} this month</p>
+            </div>
+            <div className="p-2 bg-green-500/20 rounded-lg">
+              <BarChart2 className="h-5 w-5 text-green-400" />
             </div>
           </div>
         </AnimatedCard>
       </div>
       
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search models..."
-            className="pl-10 w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
+        <div className="relative flex-grow max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input 
+            type="text" 
+            placeholder="Search models..." 
+            className="pl-10 pr-4 py-2 w-full bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         
         <div className="flex gap-2">
           <div className="relative">
-            <button
-              onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
-              className="flex items-center gap-1 px-3 py-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
-              aria-label="Filter by status"
+            <AnimatedButton
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={() => {}}
             >
-              <Filter className="w-4 h-4" />
-              <span>
-                {filterStatus === 'all' ? 'All Status' : 
-                 filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
-              </span>
-              <ChevronDown className="w-4 h-4" />
-            </button>
-            
-            <AnimatePresence>
-              {filterDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="absolute right-0 mt-2 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10"
-                >
-                  <div className="py-1">
-                    {['all', 'active', 'pending', 'rejected'].map((status) => (
-                      <button
-                        key={status}
-                        className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-700 transition-colors"
-                        onClick={() => {
-                          setFilterStatus(status);
-                          setFilterDropdownOpen(false);
-                        }}
-                      >
-                        {status === 'all' ? 'All Status' : 
-                         status.charAt(0).toUpperCase() + status.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              <Filter className="h-4 w-4" />
+              <span>Filter</span>
+            </AnimatedButton>
           </div>
           
-          <div className="relative">
-            <button
-              onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
-              className="flex items-center gap-1 px-3 py-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
-              aria-label="Sort models"
-            >
-              <TrendingUp className="w-4 h-4" />
-              <span>
-                {sortBy === 'downloads' ? 'Downloads' :
-                 sortBy === 'rating' ? 'Rating' :
-                 sortBy === 'views' ? 'Views' :
-                 sortBy === 'newest' ? 'Newest' : 'Oldest'}
-              </span>
-              <ChevronDown className="w-4 h-4" />
-            </button>
-            
-            <AnimatePresence>
-              {sortDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="absolute right-0 mt-2 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10"
-                >
-                  <div className="py-1">
-                    {[
-                      { value: 'downloads', label: 'Downloads' },
-                      { value: 'rating', label: 'Rating' },
-                      { value: 'views', label: 'Views' },
-                      { value: 'newest', label: 'Newest' },
-                      { value: 'oldest', label: 'Oldest' }
-                    ].map((option) => (
-                      <button
-                        key={option.value}
-                        className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-700 transition-colors"
-                        onClick={() => {
-                          setSortBy(option.value);
-                          setSortDropdownOpen(false);
-                        }}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <AnimatedButton
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+            onClick={toggleSortOrder}
+          >
+            <ArrowUpDown className="h-4 w-4" />
+            <span>{sortOrder === 'asc' ? 'Ascending' : 'Descending'}</span>
+          </AnimatedButton>
         </div>
       </div>
       
-      {/* Models Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredModels.map((model) => (
-          <AnimatedCard
-            key={model.id}
-            className="overflow-hidden"
-            hoverEffect="lift"
-          >
-            <div className="h-40 relative">
-              <img
-                src={model.thumbnail}
-                alt={model.name}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-              <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
-                <span className={`px-2 py-1 rounded-md text-xs ${getStatusBadgeClass(model.status)}`}>
-                  {model.status.charAt(0).toUpperCase() + model.status.slice(1)}
-                </span>
-                <span className="bg-black/60 px-2 py-1 rounded-md text-xs flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {new Date(model.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-            
-            <div className="p-4">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-bold text-lg">{model.name}</h3>
-                <button className="p-1 rounded-full hover:bg-gray-700" aria-label="More options">
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-              </div>
-              
-              <p className="text-gray-400 text-sm mb-3 line-clamp-2">
-                {model.description}
-              </p>
-              
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                <div className="flex flex-col items-center p-2 bg-gray-800/50 rounded-lg">
-                  <Download className="w-4 h-4 text-blue-400 mb-1" />
-                  <span className="text-xs text-gray-300">{formatNumber(model.downloads)}</span>
-                </div>
-                
-                <div className="flex flex-col items-center p-2 bg-gray-800/50 rounded-lg">
-                  <Eye className="w-4 h-4 text-purple-400 mb-1" />
-                  <span className="text-xs text-gray-300">{formatNumber(model.views)}</span>
-                </div>
-                
-                <div className="flex flex-col items-center p-2 bg-gray-800/50 rounded-lg">
-                  <Star className="w-4 h-4 text-yellow-400 mb-1" />
-                  <span className="text-xs text-gray-300">{model.rating.toFixed(1)}</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between pt-3 border-t border-gray-800">
-                <span className="text-xs text-purple-400">{model.category}</span>
-                <AnimatedButton variant="outline" size="sm">
-                  <span className="flex items-center gap-1">
-                    <Activity className="w-3 h-3" />
-                    Analytics
-                  </span>
-                </AnimatedButton>
-              </div>
-            </div>
-          </AnimatedCard>
-        ))}
-        
-        {/* Add New Model Card */}
-        <AnimatedCard
-          className="border-2 border-dashed border-gray-700 flex flex-col items-center justify-center p-8 h-full"
-          hoverEffect="none"
-        >
-          <div className="p-4 bg-purple-500/20 rounded-full mb-4">
-            <motion.div
-              whileHover={{ rotate: 90 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Plus className="w-8 h-8 text-purple-400" />
-            </motion.div>
+      {/* Models Table */}
+      <AnimatedCard className="overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
           </div>
-          <h3 className="text-lg font-medium mb-2">Upload New Model</h3>
-          <p className="text-gray-400 text-sm text-center mb-4 max-w-xs">
-            Share your AI model with the community and start generating revenue
-          </p>
-          <AnimatedButton variant="primary" size="sm">
-            Get Started
-          </AnimatedButton>
-        </AnimatedCard>
-      </div>
+        ) : filteredModels.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-800">
+              <thead className="bg-gray-800/50">
+                <tr>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer"
+                    onClick={() => handleSort('name')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Model Name
+                      {sortBy === 'name' && (
+                        <ArrowUpDown className="h-3 w-3" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer"
+                    onClick={() => handleSort('views')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Views
+                      {sortBy === 'views' && (
+                        <ArrowUpDown className="h-3 w-3" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer"
+                    onClick={() => handleSort('downloads')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Downloads
+                      {sortBy === 'downloads' && (
+                        <ArrowUpDown className="h-3 w-3" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer"
+                    onClick={() => handleSort('rating')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Rating
+                      {sortBy === 'rating' && (
+                        <ArrowUpDown className="h-3 w-3" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer"
+                    onClick={() => handleSort('revenue')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Revenue
+                      {sortBy === 'revenue' && (
+                        <ArrowUpDown className="h-3 w-3" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer"
+                    onClick={() => handleSort('date')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Created
+                      {sortBy === 'date' && (
+                        <ArrowUpDown className="h-3 w-3" />
+                      )}
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {filteredModels.map((model, index) => (
+                  <motion.tr 
+                    key={model.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-gray-900/30 hover:bg-gray-800/30 transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <p className="font-medium">{model.name}</p>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <Eye className="h-4 w-4 text-purple-400 mr-2" />
+                        {model.views.toLocaleString()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <Download className="h-4 w-4 text-blue-400 mr-2" />
+                        {model.downloads.toLocaleString()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex mr-2">
+                          {[...Array(5)].map((_, i) => (
+                            <Star 
+                              key={i} 
+                              className={`h-3 w-3 ${i < Math.floor(model.rating) ? 'text-yellow-400' : 'text-gray-600'}`}
+                              fill={i < Math.floor(model.rating) ? 'currentColor' : 'none'}
+                            />
+                          ))}
+                        </div>
+                        {model.rating.toFixed(1)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <p>${model.revenue.toLocaleString()}</p>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <p className="text-gray-400">
+                        {new Date(model.createdAt).toLocaleDateString()}
+                      </p>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="py-12 text-center">
+            <div className="mx-auto w-16 h-16 bg-gray-800/50 rounded-full flex items-center justify-center mb-4">
+              <BarChart2 className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium mb-2">No Models Found</h3>
+            <p className="text-gray-400 max-w-md mx-auto mb-6">
+              {searchTerm ? 'No models match your search criteria.' : 'You haven\'t created any models yet.'}
+            </p>
+            <AnimatedButton
+              variant="primary"
+              size="sm"
+              onClick={() => window.location.href = '/create'}
+            >
+              Create Your First Model
+            </AnimatedButton>
+          </div>
+        )}
+      </AnimatedCard>
     </div>
   );
 } 

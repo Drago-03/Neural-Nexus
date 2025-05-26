@@ -21,9 +21,9 @@ interface BuyModelButtonProps {
 }
 
 export default function BuyModelButton({ 
-  modelId, 
-  modelName, 
-  price, 
+  modelId,
+  modelName,
+  price,
   currency = 'USD',
   variant = 'default'
 }: BuyModelButtonProps) {
@@ -74,27 +74,27 @@ export default function BuyModelButton({
     try {
       if (paymentMethod === 'card') {
         // Handle Stripe checkout
-        const response = await fetch('/api/create-checkout-session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            modelId,
-            modelName,
-            price,
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          modelId,
+          modelName,
+          price,
             currency
-          }),
-        });
-        
-        const data = await response.json();
-        
+        }),
+      });
+      
+      const data = await response.json();
+      
         if (data.url) {
           window.location.href = data.url;
         } else {
-          throw new Error(data.error || 'Failed to create checkout session');
-        }
-        
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+      
         return; // Don't set success state here as we're redirecting
       }
       else if (paymentMethod === 'crypto') {
@@ -176,9 +176,9 @@ export default function BuyModelButton({
         
         const data = await response.json();
         
-        if (data.url) {
-          window.location.href = data.url;
-        } else {
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
           throw new Error(data.error || 'Failed to create UPI payment');
         }
         
@@ -190,7 +190,7 @@ export default function BuyModelButton({
       toast.error(error.message || 'Payment failed, please try again');
     }
   };
-
+  
   return (
     <>
       {/* Button Variants */}
@@ -204,7 +204,7 @@ export default function BuyModelButton({
           Buy
         </button>
       ) : variant === 'outline' ? (
-        <button 
+    <button
           onClick={handleOpenPayment}
           className="border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white px-4 py-2 rounded-lg transition-colors flex items-center"
           aria-label={`Buy ${modelName}`}
@@ -328,7 +328,7 @@ export default function BuyModelButton({
                       onClick={() => setPaymentMethod(null)}
                     >
                       Back to Payment Methods
-                    </button>
+    </button>
                   </div>
                 )}
                 

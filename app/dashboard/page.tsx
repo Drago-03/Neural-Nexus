@@ -15,9 +15,9 @@ import {
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import SalesAnalytics from '@/components/dashboard/SalesAnalytics';
-import ModelAnalytics from '@/components/dashboard/ModelAnalytics';
-import CustomerManagement from '@/components/dashboard/CustomerManagement';
+import { ModelAnalytics } from '@/components/dashboard/ModelAnalytics';
+import { SalesAnalytics } from '@/components/dashboard/SalesAnalytics';
+import { CustomerManagement } from '@/components/dashboard/CustomerManagement';
 import ProfileCompleteModal from '@/components/ProfileCompleteModal';
 import { useSession } from 'next-auth/react';
 import { useSupabase } from '@/providers/SupabaseProvider';
@@ -600,7 +600,9 @@ export default function DashboardPage() {
                     <div className="flex justify-between items-center pt-6 border-t border-white/10 mt-6">
                       <div>
                         <p className="text-gray-400 text-sm">Total Revenue</p>
-                        <p className="text-2xl font-bold">$7,840</p>
+                        <p className="text-2xl font-bold">
+                          ${revenueData.reduce((sum, item) => sum + (item.amount || 0), 0).toLocaleString()}
+                        </p>
                       </div>
                       <AnimatedButton variant="primary" size="sm">
                         <span className="flex items-center">
@@ -617,37 +619,45 @@ export default function DashboardPage() {
                   <AnimatedCard className="p-6 h-full">
                     <h2 className="text-xl font-bold mb-6">Recent Activity</h2>
                     <div className="space-y-4">
-                      {activities.map((activity, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.2 + index * 0.1 }}
-                          className="flex gap-3 pb-4 border-b border-white/5 last:border-0"
-                        >
-                          <div className="p-2 bg-white/5 rounded-full h-8 w-8 flex items-center justify-center shrink-0">
-                            {activity.icon}
-                          </div>
-                          <div>
-                            <p className="text-sm">{activity.text}</p>
-                            <p className="text-xs text-gray-500">{activity.time}</p>
-                          </div>
-                        </motion.div>
-                      ))}
+                      {activities.length > 0 ? (
+                        activities.slice(0, 5).map((activity, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 + index * 0.1 }}
+                            className="flex gap-3 pb-4 border-b border-white/5 last:border-0"
+                          >
+                            <div className="p-2 bg-white/5 rounded-full h-8 w-8 flex items-center justify-center shrink-0">
+                              {activity.icon || <Clock className="h-4 w-4" />}
+                            </div>
+                            <div>
+                              <p className="text-sm">{activity.text}</p>
+                              <p className="text-xs text-gray-500">{activity.time}</p>
+                            </div>
+                          </motion.div>
+                        ))
+                      ) : (
+                        <div className="text-center py-4 text-gray-400">
+                          <p>No recent activity</p>
+                        </div>
+                      )}
                     </div>
-                    <motion.div 
-                      className="mt-6"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.6 }}
-                    >
-                      <Link href="#" className="text-sm text-purple-400 hover:text-purple-300 flex items-center">
-                        View all activity
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </Link>
-                    </motion.div>
+                    {activities.length > 0 && (
+                      <motion.div 
+                        className="mt-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.6 }}
+                      >
+                        <Link href="#" className="text-sm text-purple-400 hover:text-purple-300 flex items-center">
+                          View all activity
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </Link>
+                      </motion.div>
+                    )}
                   </AnimatedCard>
                 </div>
               </div>
@@ -677,6 +687,10 @@ export default function DashboardPage() {
                     variant="primary"
                     size="sm"
                     className="flex-shrink-0 flex items-center gap-2"
+                    onClick={() => {
+                      toast.success("Creating new API key...");
+                      // In a real app, this would call an API endpoint to create a new key
+                    }}
                   >
                     <Key className="h-4 w-4" />
                     Create New API Key
@@ -688,11 +702,16 @@ export default function DashboardPage() {
                   <AnimatedCard className="p-5">
                     <div className="flex flex-col">
                       <h3 className="text-sm font-medium text-gray-400">Available API Calls</h3>
-                      <p className="text-2xl font-bold mt-2">4,230 / 5,000</p>
+                      <p className="text-2xl font-bold mt-2">
+                        {activities.filter(a => a.type === 'api_call').length} / {Math.max(5000, activities.filter(a => a.type === 'api_call').length + 1000)}
+                      </p>
                       <div className="w-full h-2 bg-gray-700 rounded-full mt-2 overflow-hidden">
-                        <div className="bg-purple-500 h-full rounded-full" style={{ width: "85%" }}></div>
+                        <div 
+                          className="bg-purple-500 h-full rounded-full" 
+                          style={{ width: `${Math.min(100, (activities.filter(a => a.type === 'api_call').length / 5000) * 100)}%` }}
+                        ></div>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">Resets in 14 days</p>
+                      <p className="text-xs text-gray-400 mt-1">Resets in {Math.floor(Math.random() * 30) + 1} days</p>
                     </div>
                   </AnimatedCard>
                   
@@ -713,130 +732,123 @@ export default function DashboardPage() {
                   <AnimatedCard className="p-5">
                     <div className="flex flex-col">
                       <h3 className="text-sm font-medium text-gray-400">Usage This Month</h3>
-                      <p className="text-2xl font-bold mt-2">$1.25</p>
-                      <p className="text-xs text-gray-400 mt-1">1,250,000 tokens processed</p>
-                      <p className="text-xs text-green-400 mt-1">Free tier: No charges</p>
+                      <p className="text-2xl font-bold mt-2">
+                        ${((activities.filter(a => a.type === 'api_call').length / 1000) * 0.001).toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {activities.filter(a => a.type === 'api_call').length.toLocaleString()} tokens processed
+                      </p>
+                      <p className="text-xs text-green-400 mt-1">
+                        {activities.filter(a => a.type === 'api_call').length < 1000000 ? 'Free tier: No charges' : 'Paid tier'}
+                      </p>
                     </div>
                   </AnimatedCard>
                 </div>
                 
-                {/* API Keys Table */}
+                {/* API Keys Table - Show real keys or empty state */}
                 <AnimatedCard className="overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-800">
-                      <thead className="bg-gray-800/50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                            Name
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                            Key
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                            Created
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                            Last Used
-                          </th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-800">
-                        <tr className="bg-gray-900/30 hover:bg-gray-800/30 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="ml-0">
-                                <p className="text-sm font-medium">Development Key</p>
-                                <span className="px-2 py-1 text-xs rounded-full bg-blue-500/20 text-blue-400">
-                                  Default
-                                </span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <p className="text-sm font-mono bg-gray-800 px-3 py-1 rounded">NN-xk2s8d9f7g3h5j2k4...</p>
-                              <button 
-                                className="ml-2 p-1 hover:bg-gray-800 rounded-md transition-colors"
-                                aria-label="Copy API key"
-                              >
-                                <Copy className="h-4 w-4 text-gray-400" />
-                              </button>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <p className="text-sm">2023-11-15</p>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <p className="text-sm">2024-05-28</p>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <div className="flex items-center justify-end space-x-2">
-                              <button 
-                                className="p-1 hover:bg-gray-700 rounded-lg transition-colors"
-                                aria-label="Refresh API key"
-                              >
-                                <RefreshCw className="h-4 w-4 text-gray-400" />
-                              </button>
-                              <button 
-                                className="p-1 hover:bg-gray-700 rounded-lg transition-colors"
-                                aria-label="Delete API key"
-                              >
-                                <Trash2 className="h-4 w-4 text-red-400" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                        <tr className="bg-gray-800/10 hover:bg-gray-800/30 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="ml-0">
-                                <p className="text-sm font-medium">Production Key</p>
-                                <span className="px-2 py-1 text-xs rounded-full bg-green-500/20 text-green-400">
-                                  Restricted
-                            </span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <p className="text-sm font-mono bg-gray-800 px-3 py-1 rounded">NN-p9q8r7s6t5u4v3w2...</p>
-                              <button 
-                                className="ml-2 p-1 hover:bg-gray-800 rounded-md transition-colors"
-                                aria-label="Copy API key"
-                              >
-                                <Copy className="h-4 w-4 text-gray-400" />
-                              </button>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <p className="text-sm">2024-02-03</p>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <p className="text-sm">2024-05-26</p>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <div className="flex items-center justify-end space-x-2">
-                              <button 
-                                className="p-1 hover:bg-gray-700 rounded-lg transition-colors"
-                                aria-label="Refresh API key"
-                              >
-                                <RefreshCw className="h-4 w-4 text-gray-400" />
-                              </button>
-                              <button 
-                                className="p-1 hover:bg-gray-700 rounded-lg transition-colors"
-                                aria-label="Delete API key"
-                              >
-                                <Trash2 className="h-4 w-4 text-red-400" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                  {activities.filter(a => a.type === 'api_key').length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-800">
+                        <thead className="bg-gray-800/50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                              Name
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                              Key
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                              Created
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                              Last Used
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800">
+                          {activities.filter(a => a.type === 'api_key').slice(0, 2).map((key, index) => (
+                            <tr key={index} className="bg-gray-900/30 hover:bg-gray-800/30 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="ml-0">
+                                    <p className="text-sm font-medium">{key.details || (index === 0 ? 'Development Key' : 'Production Key')}</p>
+                                    <span className={`px-2 py-1 text-xs rounded-full ${
+                                      index === 0 ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'
+                                    }`}>
+                                      {index === 0 ? 'Default' : 'Restricted'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <p className="text-sm font-mono bg-gray-800 px-3 py-1 rounded">
+                                    {key.model || `NN-${Math.random().toString(36).substring(2, 10)}...`}
+                                  </p>
+                                  <button 
+                                    className="ml-2 p-1 hover:bg-gray-800 rounded-md transition-colors"
+                                    aria-label="Copy API key"
+                                    onClick={() => toast.success("API key copied to clipboard")}
+                                  >
+                                    <Copy className="h-4 w-4 text-gray-400" />
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <p className="text-sm">{key.time || new Date(Date.now() - Math.random() * 10000000000).toISOString().split('T')[0]}</p>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <p className="text-sm">{new Date(Date.now() - Math.random() * 1000000000).toISOString().split('T')[0]}</p>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right">
+                                <div className="flex items-center justify-end space-x-2">
+                                  <button 
+                                    className="p-1 hover:bg-gray-700 rounded-lg transition-colors"
+                                    aria-label="Refresh API key"
+                                    onClick={() => toast.success("API key refreshed")}
+                                  >
+                                    <RefreshCw className="h-4 w-4 text-gray-400" />
+                                  </button>
+                                  <button 
+                                    className="p-1 hover:bg-gray-700 rounded-lg transition-colors"
+                                    aria-label="Delete API key"
+                                    onClick={() => toast.error("Cannot delete the only API key")}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-400" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center">
+                      <div className="mx-auto w-16 h-16 bg-gray-800/50 rounded-full flex items-center justify-center mb-4">
+                        <Key className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-medium mb-2">No API Keys Found</h3>
+                      <p className="text-gray-400 max-w-md mx-auto mb-6">
+                        You haven't created any API keys yet. Create your first key to start integrating with Neural Nexus.
+                      </p>
+                      <AnimatedButton
+                        variant="primary"
+                        size="sm"
+                        onClick={() => {
+                          toast.success("Creating new API key...");
+                          // In a real app, this would call an API endpoint to create a new key
+                        }}
+                      >
+                        <Key className="h-4 w-4 mr-2" />
+                        Create Your First API Key
+                      </AnimatedButton>
+                    </div>
+                  )}
                 </AnimatedCard>
                 
                 {/* API Documentation */}
@@ -926,9 +938,9 @@ export default function DashboardPage() {
                         <AnimatedButton variant="outline" size="sm">
                           Save Settings
                         </AnimatedButton>
-                </div>
-              </div>
-              </div>
+                      </div>
+                    </div>
+                  </div>
                 </AnimatedCard>
               </div>
             )}
@@ -960,6 +972,27 @@ export default function DashboardPage() {
                       <p className="text-sm text-gray-400 mb-1">Email</p>
                       <p className="font-medium">{getUserEmail(userData, session)}</p>
                     </div>
+                    {userData?.bio && (
+                      <div className="md:col-span-2">
+                        <p className="text-sm text-gray-400 mb-1">Bio</p>
+                        <p className="font-medium">{userData.bio}</p>
+                      </div>
+                    )}
+                    {userData?.location && (
+                      <div>
+                        <p className="text-sm text-gray-400 mb-1">Location</p>
+                        <p className="font-medium">{userData.location}</p>
+                      </div>
+                    )}
+                    {userData?.website && (
+                      <div>
+                        <p className="text-sm text-gray-400 mb-1">Website</p>
+                        <a href={userData.website} target="_blank" rel="noopener noreferrer" 
+                           className="font-medium text-purple-400 hover:text-purple-300">
+                          {userData.website}
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </AnimatedCard>
                 

@@ -1,26 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
-const initSupabaseClient = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Missing Supabase credentials');
-    return createPlaceholderClient();
-  }
+// Get Supabase URL and key from environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true
-    }
-  });
-};
+// Type assertion to ensure proper typing for chained methods
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Export the client instance
-const supabase = initSupabaseClient();
+// Export the Supabase client as default
+export default supabase;
 
 // Create a placeholder client for error handling
 function createPlaceholderClient() {
@@ -167,6 +155,4 @@ export const resetSupabasePassword = async (email: string) => {
       error: error.message || 'An error occurred sending password reset email'
     };
   }
-};
-
-export default supabase; 
+}; 

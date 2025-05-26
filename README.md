@@ -4,6 +4,16 @@ _Star the Repo⭐_
 <div align="center">
   <img src="public/images/Logo.png" alt="Neural Nexus Logo" width="200" />
   <p style="font-size: 1.2em; color: #00BFFF; font-weight: bold;">The Ultimate Hub for AI Innovators</p>
+  
+  [![Stars](https://img.shields.io/github/stars/Drago-03/Neural-Nexus?style=for-the-badge&logo=github&color=f5c518&logoColor=white&labelColor=181717)](https://github.com/Drago-03/Neural-Nexus/stargazers)
+  [![Forks](https://img.shields.io/github/forks/Drago-03/Neural-Nexus?style=for-the-badge&logo=github&color=4f94ef&logoColor=white&labelColor=181717)](https://github.com/Drago-03/Neural-Nexus/network/members)
+  [![Issues](https://img.shields.io/github/issues/Drago-03/Neural-Nexus?style=for-the-badge&logo=github&color=4ab8a1&logoColor=white&labelColor=181717)](https://github.com/Drago-03/Neural-Nexus/issues)
+  [![License](https://img.shields.io/github/license/Drago-03/Neural-Nexus?style=for-the-badge&logo=opensourceinitiative&color=c3336b&logoColor=white&labelColor=181717)](https://github.com/Drago-03/Neural-Nexus/blob/main/LICENSE)
+  [![Discord](https://img.shields.io/discord/1234567890?style=for-the-badge&logo=discord&color=5865F2&logoColor=white&labelColor=181717&label=chat)](https://discord.gg/neuralnexus)
+  
+  <a href="https://www.buymeacoffee.com/neuralnexus"><img src="https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=white&labelColor=555555"></a>
+  <a href="https://www.producthunt.com/posts/neural-nexus"><img src="https://img.shields.io/badge/Product%20Hunt-Upvote-DA552F?style=for-the-badge&logo=producthunt&logoColor=white&labelColor=222222"></a>
+  <a href="https://tech.dev/neural-nexus"><img src="https://img.shields.io/badge/tech.dev-Sponsor-9146FF?style=for-the-badge&logo=twitch&logoColor=white&labelColor=222222"></a>
 </div>
 
 ## Welcome to Neural Nexus
@@ -122,6 +132,16 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
    npm run dev
    ```
    Open `http://localhost:3000` to view the application.
+
+## Community & Support
+
+Join our active community to get help, share ideas, and connect with other developers!
+
+<div align="center">
+  <a href="https://discord.gg/neuralnexus"><img src="https://img.shields.io/badge/Discord-Join%20Our%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
+  <a href="https://twitter.com/NeuralNexusAI"><img src="https://img.shields.io/badge/Twitter-Follow%20Us-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white"></a>
+  <a href="https://github.com/Drago-03/Neural-Nexus/discussions"><img src="https://img.shields.io/badge/GitHub-Discussions-181717?style=for-the-badge&logo=github&logoColor=white"></a>
+</div>
 
 ## Supabase Data Model
 
@@ -261,22 +281,6 @@ We maintain comprehensive documentation on how we handle data, models, and conte
 
 These docs are here to ensure we're all on the same page, building a safe and creative space for AI innovation. Got questions? Hit us up! 💬
 
-## Contributing
-
-Got ideas to make this even more lit? Drop a PR or issue. Let's build this together! 💡
-
-### **Contributors**
-
-Thanks to all our awesome contributors who are helping build Neural Nexus! 🔥
-
-<a href="https://github.com/Drago-03/Neural-Nexus/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Drago-03/Neural-Nexus" />
-</a>
-
-## License
-
-© 2025 Indie Hub. All rights reserved. Keep it real, fam! ✌️
-
 ## Build Instructions
 
 When building the project for production, you might encounter "document is not defined" errors for authentication pages. This is a common issue with Next.js when client-side features are used during static site generation.
@@ -371,7 +375,7 @@ Neural Nexus is a powerful platform for AI model deployment, collaboration, and 
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/neural-nexus.git
+git clone https://github.com/Drago-03/neural-nexus.git
 cd neural-nexus
 
 # Install dependencies
@@ -440,6 +444,18 @@ node ./scripts/patch-build.js
 ## Contributing
 Contributions are welcome! Please check out our [Contributing Guide](CONTRIBUTING.md) for details.
 
+<a href="https://github.com/Drago-03/Neural-Nexus/blob/main/CONTRIBUTING.md">
+  <img src="https://img.shields.io/badge/Contributing-Guidelines-21262d?style=for-the-badge&logo=github&logoColor=white">
+</a>
+
+### Open Bounties
+
+<a href="https://github.com/Drago-03/Neural-Nexus/labels/bounty">
+  <img src="https://img.shields.io/github/issues/Drago-03/Neural-Nexus/bounty?style=for-the-badge&logo=opensourceinitiative&label=Open%20Bounties&color=0E8A16">
+</a>
+
+Get paid to contribute! Check out our open bounties and earn rewards for your contributions.
+
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -498,3 +514,49 @@ Issues and PRs with no activity for 30 days are marked as stale and closed after
 ### Code Ownership
 
 The CODEOWNERS file automatically assigns reviewers to PRs based on the files changed.
+
+## Sponsors
+
+We're grateful to our sponsors who make this project possible.
+
+<div align="center">
+  <a href="https://tech.dev"><img src="https://via.placeholder.com/150x50" alt="Tech.dev" height="50"></a>
+  <a href="https://yourcompany.com"><img src="https://via.placeholder.com/150x50" alt="Your Company" height="50"></a>
+  <a href="https://anothercompany.com"><img src="https://via.placeholder.com/150x50" alt="Another Company" height="50"></a>
+</div>
+
+<div align="center">
+  <a href="https://github.com/sponsors/Drago-03"><img src="https://img.shields.io/badge/GitHub-Become%20a%20Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white"></a>
+</div>
+
+## Contributing
+
+Got ideas to make this even more lit? Drop a PR or issue. Let's build this together! 💡
+
+### **Contributors**
+Thanks to all our awesome contributors who are helping build Neural Nexus! 🔥
+
+<a href="https://github.com/Drago-03/Neural-Nexus/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Drago-03/Neural-Nexus" />
+</a>
+
+---
+
+<div align="center">
+  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=600&size=32&duration=3000&pause=1000&color=C77DFF&center=true&vCenter=true&width=435&lines=Thank+you+for+visiting!;We+appreciate+your+support!;Join+our+community+today!;Let's+build+the+future+of+AI!" alt="Typing SVG" />
+  
+  <blockquote>
+    <p><em>"The future belongs to those who believe in the beauty of their code."</em></p>
+    <p>— Neural-Nexus Team</p>
+  </blockquote>
+</div>
+
+<p align="center">
+  <a href="#top">
+    <img src="https://user-images.githubusercontent.com/39412016/174495702-a3e8c3d5-14a5-456d-a8d3-fb6368cca77e.png" alt="Back to top" height="29"/>
+  </a>
+</p>
+
+## License
+
+© 2025 Indie Hub. All rights reserved. Keep it real, fam! ✌️
