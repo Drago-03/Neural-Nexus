@@ -53,11 +53,13 @@ try {
       fs.copyFileSync('.env.local', '.env.production');
       log.success('Created .env.production from .env.local');
     } else {
-      // Create a minimal .env.production file
+      // Create a minimal .env.production file with placeholder values
       const envContent = `
 # Neural Nexus Production Environment
 NEXT_PUBLIC_SITE_URL=https://neural-nexus.vercel.app
-MONGODB_URI=mongodb+srv://placeholder:placeholder@cluster0.example.mongodb.net/neural-nexus?retryWrites=true&w=majority
+# Replace this placeholder with your actual MongoDB URI in your deployment environment
+# This is just a build-time placeholder and doesn't connect to any real database
+MONGODB_URI=mongodb://placeholder:placeholder@localhost:27017/neural-nexus?authSource=admin
 NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder
 `;
