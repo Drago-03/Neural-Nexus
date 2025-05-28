@@ -9,7 +9,7 @@ _Star the Repo⭐_
   <a href="https://github.com/Drago-03/Neural-Nexus/network/members"><img src="https://img.shields.io/github/forks/Drago-03/Neural-Nexus?style=for-the-badge&logo=github&color=4f94ef&logoColor=white&labelColor=181717" alt="Forks" /></a>
   <a href="https://github.com/Drago-03/Neural-Nexus/issues"><img src="https://img.shields.io/github/issues/Drago-03/Neural-Nexus?style=for-the-badge&logo=github&color=4ab8a1&logoColor=white&labelColor=181717" alt="Issues" /></a>
   <a href="https://github.com/Drago-03/Neural-Nexus/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Drago-03/Neural-Nexus?style=for-the-badge&logo=opensourceinitiative&color=c3336b&logoColor=white&labelColor=181717" alt="License" /></a>
-  <a href="https://discord.gg/neuralnexus"><img src="https://img.shields.io/discord/1234567890?style=for-the-badge&logo=discord&color=5865F2&logoColor=white&labelColor=181717&label=chat" alt="Discord" /></a>
+  <a href="https://discord.gg/9bPsjgnJ5v"><img src="https://img.shields.io/discord/1234567890?style=for-the-badge&logo=discord&color=5865F2&logoColor=white&labelColor=181717&label=chat" alt="Discord" /></a>
   
   <a href="https://www.buymeacoffee.com/neuralnexus"><img src="https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=white&labelColor=555555" alt="Buy Me a Coffee"></a>
   <a href="https://www.producthunt.com/posts/neural-nexus"><img src="https://img.shields.io/badge/Product%20Hunt-Upvote-DA552F?style=for-the-badge&logo=producthunt&logoColor=white&labelColor=222222" alt="Product Hunt"></a>

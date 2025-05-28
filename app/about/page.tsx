@@ -264,23 +264,22 @@ export default function AboutPage() {
       {/* Stats Section */}
       <section className="py-16 px-4 bg-gray-900/50">
         <div className="container mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 
-              className="text-3xl font-bold mb-4" 
-              style={{ opacity: 0, transform: 'translateY(-20px)' }}
-            >
-              Growing Fast
-            </h2>
-            <p 
-              className="text-gray-300 text-lg" 
-              style={{ opacity: 0 }}
-            >
+          <motion.div 
+            className="text-center max-w-3xl mx-auto mb-12"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-3xl font-bold mb-4">Growing Fast</h2>
+            <p className="text-gray-300 text-lg">
               Join thousands of developers and creators already using Neural Nexus
             </p>
-          </div>
-          <div 
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" 
-            style={{ opacity: 0, transform: 'translateY(20px)' }}
+          </motion.div>
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
             <div className="bg-gradient-to-br from-purple-900/40 to-purple-600/20 rounded-xl p-6 border border-purple-500/30">
               <h3 className="text-sm uppercase tracking-wider text-purple-400 mb-1">Active Users</h3>
@@ -338,7 +337,7 @@ export default function AboutPage() {
                 Processing millions of requests
               </p>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 

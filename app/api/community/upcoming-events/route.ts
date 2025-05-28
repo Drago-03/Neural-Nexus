@@ -1,5 +1,70 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import { getCollection } from '@/lib/mongodb';
+
+// Define explicit runtime configuration
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 60; // seconds
+
+// Sample data as fallback
+const SAMPLE_EVENTS = [
+  {
+    id: 'event1',
+    title: 'Neural Networks Deep Dive',
+    description: 'Advanced workshop on neural network architectures and optimization techniques',
+    date: '2023-11-15T18:00:00Z',
+    location: 'Online',
+    image: '/images/events/neural-networks.jpg',
+    organizer: {
+      name: 'AI Research Institute',
+      avatar: '/images/organizers/ai-research.jpg'
+    },
+    attendees: 450,
+    type: 'Workshop'
+  },
+  {
+    id: 'event2',
+    title: 'Open Source AI Summit',
+    description: 'Annual conference for open source AI projects and contributors',
+    date: '2023-12-05T09:00:00Z',
+    location: 'San Francisco, CA',
+    image: '/images/events/open-source-summit.jpg',
+    organizer: {
+      name: 'Open AI Alliance',
+      avatar: '/images/organizers/open-alliance.jpg'
+    },
+    attendees: 1200,
+    type: 'Conference'
+  },
+  {
+    id: 'event3',
+    title: 'AI Ethics Roundtable',
+    description: 'Discussion on ethical considerations in AI development and deployment',
+    date: '2023-11-22T17:30:00Z',
+    location: 'Online',
+    image: '/images/events/ai-ethics.jpg',
+    organizer: {
+      name: 'Tech Ethics Collective',
+      avatar: '/images/organizers/ethics-collective.jpg'
+    },
+    attendees: 320,
+    type: 'Discussion'
+  },
+  {
+    id: 'event4',
+    title: 'Generative AI Hackathon',
+    description: 'Build innovative applications using the latest generative AI models',
+    date: '2023-12-15T10:00:00Z',
+    location: 'New York, NY',
+    image: '/images/events/gen-ai-hackathon.jpg',
+    organizer: {
+      name: 'Neural Nexus',
+      avatar: '/images/organizers/neural-nexus.jpg'
+    },
+    attendees: 500,
+    type: 'Hackathon'
+  }
+];
 
 /**
  * GET /api/community/upcoming-events
@@ -9,100 +74,59 @@ import { connectToDatabase } from '@/lib/mongodb';
  */
 export async function GET() {
   try {
-    let upcomingEvents = [];
-    
-    // Try to fetch from database
-    try {
-      const { db } = await connectToDatabase();
-      
-      // Get current date to filter for upcoming events only
-      const currentDate = new Date();
-      
-      // Find upcoming events sorted by date
-      upcomingEvents = await db.collection('events')
-        .find({ 
-          eventDate: { $gte: currentDate } // Only future events
-        })
-        .sort({ eventDate: 1 }) // Sort by date ascending
-        .limit(6)
-        .toArray();
-      
-      // Transform the data into the format needed by the frontend
-      if (upcomingEvents && upcomingEvents.length > 0) {
-        console.log("✅ Fetched upcoming events from database:", upcomingEvents.length);
-        
-        // Map database fields to frontend schema
-        upcomingEvents = upcomingEvents.map(event => ({
-          title: event.title,
-          date: formatEventDate(event.eventDate),
-          image: event.image || "/events/default.jpg",
-          location: event.location || "Virtual Event",
-          attendees: event.attendeeCount || 0
-        }));
-      } else {
-        throw new Error("No upcoming events found in database");
-      }
-    } catch (error) {
-      console.error("❌ Error fetching events from database:", error);
-      
-      // Fall back to sample data
-      upcomingEvents = getSampleEvents();
+    // Check if we're in a build environment
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      console.log('Using sample events data during build');
+      return NextResponse.json(SAMPLE_EVENTS);
     }
     
-    return NextResponse.json(upcomingEvents);
+    // Connect to MongoDB
+    const eventsCollection = await getCollection('events');
+    
+    // Get upcoming events
+    const currentDate = new Date();
+    const events = await eventsCollection.find({
+      date: { $gte: currentDate }
+    })
+    .sort({ date: 1 })
+    .limit(8)
+    .toArray();
+    
+    if (events.length === 0) {
+      // Return an empty array instead of sample data
+      console.log('No upcoming events found in database');
+      return NextResponse.json([]);
+    }
+    
+    // Format dates for display
+    const formattedEvents = events.map(event => ({
+      ...event,
+      formattedDate: formatEventDate(event.date)
+    }));
+    
+    return NextResponse.json(formattedEvents);
   } catch (error) {
-    console.error("❌ Unexpected error in upcoming events API:", error);
+    console.error('Error fetching upcoming events:', error);
     
-    // Return sample data in case of any error
-    return NextResponse.json(getSampleEvents());
+    // Only return sample data during build, otherwise throw error
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      return NextResponse.json(SAMPLE_EVENTS);
+    }
+    
+    return NextResponse.json({ error: 'Failed to fetch events from database' }, { status: 500 });
   }
 }
 
-// Helper to format event dates
 function formatEventDate(date: Date | string): string {
-  // Format date as "Month Day, Year" or handle string dates
-  if (typeof date === 'string') {
-    // If it's already a formatted string, return it
-    if (!/^\d{4}-\d{2}-\d{2}/.test(date)) {
-      return date;
-    }
-    
-    // Otherwise parse the ISO string
-    date = new Date(date);
-  }
+  const eventDate = new Date(date);
   
-  const options: Intl.DateTimeFormatOptions = { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
-  };
-  
-  return date.toLocaleDateString('en-US', options);
-}
-
-// Sample events as fallback
-function getSampleEvents() {
-  return [
-    {
-      title: "AI Model Hackathon",
-      date: "Dec 15-17, 2024",
-      image: "/events/hackathon.jpg",
-      location: "Virtual Event",
-      attendees: 500
-    },
-    {
-      title: "Neural Networks Workshop",
-      date: "Dec 20, 2024",
-      image: "/events/workshop.jpg",
-      location: "Online",
-      attendees: 300
-    },
-    {
-      title: "AI Model Showcase",
-      date: "Jan 5, 2025",
-      image: "/events/showcase.jpg",
-      location: "Virtual Conference",
-      attendees: 1000
-    }
-  ];
+  // Format: "Nov 15, 2023 • 6:00 PM"
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }).format(eventDate);
 } 

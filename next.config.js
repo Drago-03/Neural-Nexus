@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Core settings
-  reactStrictMode: false,
+  reactStrictMode: true,
   swcMinify: false,
   
   // Image optimization settings
@@ -14,19 +14,70 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.ipfs.w3s.link' },
       { protocol: 'https', hostname: '**.ipfs.dweb.link' },
     ],
+    domains: [
+      'avatars.githubusercontent.com',
+      'lh3.googleusercontent.com',
+      'res.cloudinary.com',
+      'images.unsplash.com',
+      'randomuser.me',
+      'github.com',
+      'placehold.co',
+      'cdn.pixabay.com'
+    ],
   },
   
   // Disable type checking and linting during build
-  typescript: { ignoreBuildErrors: true },
-  eslint: { ignoreDuringBuilds: true },
+  typescript: {
+    // !! WARN !!
+    // Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    // !! WARN !!
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    ignoreDuringBuilds: true,
+  },
   
   // Middleware configuration
   experimental: {
-    middlewarePrefetch: 'strict',
+    middlewarePrefetch: 'flexible',
+    serverComponentsExternalPackages: ['mongodb'],
+  },
+  
+  // Increase timeout for builds
+  staticPageGenerationTimeout: 120,
+  
+  // Configure headers for API routes
+  async headers() {
+    return [
+      {
+        // Apply these headers to all routes
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
+          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
+        ],
+      },
+    ]
+  },
+  
+  // Configure redirects
+  async redirects() {
+    return [
+      {
+        source: '/github',
+        destination: 'https://github.com/Drago-03/Neural-Nexus',
+        permanent: false,
+      },
+    ]
   },
   
   // Webpack configuration
-  webpack: (config, { isEdgeRuntime }) => {
+  webpack: (config, { isEdgeRuntime, isServer }) => {
     // Handle Edge runtime (middleware)
     if (isEdgeRuntime) {
       const originalEntry = config.entry;
@@ -62,6 +113,18 @@ const nextConfig = {
           buffer: false,
           querystring: false,
         },
+      };
+    }
+    
+    // Fix for MongoDB 5.0+ issues
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        dns: false,
+        child_process: false,
       };
     }
     

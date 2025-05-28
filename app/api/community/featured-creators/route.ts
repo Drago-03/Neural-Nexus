@@ -1,5 +1,58 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import { getCollection } from '@/lib/mongodb';
+
+// Define explicit runtime configuration
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 60; // seconds
+
+// Sample data as fallback
+const SAMPLE_CREATORS = [
+  {
+    id: 'creator1',
+    name: 'Alex Johnson',
+    username: 'alexai',
+    avatar: '/images/creators/alex.jpg',
+    role: 'AI Researcher',
+    followers: 12400,
+    models: 8,
+    verified: true,
+    bio: 'Developing next-gen language models | PhD in ML | Open source advocate'
+  },
+  {
+    id: 'creator2',
+    name: 'Sophia Chen',
+    username: 'sophiaml',
+    avatar: '/images/creators/sophia.jpg',
+    role: 'ML Engineer',
+    followers: 8700,
+    models: 5,
+    verified: true,
+    bio: 'Building vision models that understand the world | Previously @OpenAI'
+  },
+  {
+    id: 'creator3',
+    name: 'Marcus Lee',
+    username: 'marcusai',
+    avatar: '/images/creators/marcus.jpg',
+    role: 'NLP Specialist',
+    followers: 6300,
+    models: 12,
+    verified: false,
+    bio: 'Creating accessible NLP models for everyone | Contributor to HuggingFace'
+  },
+  {
+    id: 'creator4',
+    name: 'Priya Sharma',
+    username: 'priyaml',
+    avatar: '/images/creators/priya.jpg',
+    role: 'Computer Vision Expert',
+    followers: 9200,
+    models: 7,
+    verified: true,
+    bio: 'Pushing boundaries in computer vision | PhD from Stanford | 3x Kaggle winner'
+  }
+];
 
 /**
  * GET /api/community/featured-creators
@@ -9,92 +62,73 @@ import { connectToDatabase } from '@/lib/mongodb';
  */
 export async function GET() {
   try {
-    let featuredCreators = [];
-    
-    // Try to fetch from database
-    try {
-      const { db } = await connectToDatabase();
-      
-      // Find creators marked as featured, limit to 6, sort by followers count
-      featuredCreators = await db.collection('creators')
-        .find({ featured: true })
-        .sort({ followers: -1 })
-        .limit(6)
-        .toArray();
-      
-      // Transform the data into the format needed by the frontend
-      if (featuredCreators && featuredCreators.length > 0) {
-        console.log("✅ Fetched featured creators from database:", featuredCreators.length);
-        
-        // Map database fields to frontend schema
-        featuredCreators = featuredCreators.map(creator => ({
-          name: creator.name,
-          image: creator.avatar || "/creators/default.jpg",
-          role: creator.role || "AI Developer",
-          models: creator.modelCount || 0,
-          followers: formatFollowerCount(creator.followers || 0),
-          bio: creator.bio || "AI developer on Neural Nexus",
-          tags: creator.tags || ["#AI"]
-        }));
-      } else {
-        throw new Error("No featured creators found in database");
-      }
-    } catch (error) {
-      console.error("❌ Error fetching creators from database:", error);
-      
-      // Fall back to sample data
-      featuredCreators = getSampleCreators();
+    // Check if we're in a build environment
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      console.log('Using sample creators data during build');
+      return NextResponse.json(SAMPLE_CREATORS);
     }
     
-    return NextResponse.json(featuredCreators);
-  } catch (error) {
-    console.error("❌ Unexpected error in featured creators API:", error);
+    // Connect to MongoDB
+    const usersCollection = await getCollection('users');
+    const modelsCollection = await getCollection('models');
     
-    // Return sample data in case of any error
-    return NextResponse.json(getSampleCreators());
+    // Get featured creators based on model count, followers, and activity
+    const creators = await usersCollection.aggregate([
+      {
+        $lookup: {
+          from: 'models',
+          localField: '_id',
+          foreignField: 'creator_id',
+          as: 'models'
+        }
+      },
+      {
+        $match: {
+          'models.0': { $exists: true }, // Has at least one model
+          'role': { $exists: true }      // Has a role defined
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          username: 1,
+          avatar: 1,
+          role: 1,
+          bio: 1,
+          verified: 1,
+          followers: { $size: '$followers' },
+          models: { $size: '$models' }
+        }
+      },
+      { $sort: { followers: -1, models: -1 } },
+      { $limit: 8 }
+    ]).toArray();
+    
+    if (creators.length === 0) {
+      // Return an empty array instead of sample data
+      console.log('No creators found in database');
+      return NextResponse.json([]);
+    }
+    
+    return NextResponse.json(creators);
+  } catch (error) {
+    console.error('Error fetching featured creators:', error);
+    
+    // Only return sample data during build, otherwise throw error
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      return NextResponse.json(SAMPLE_CREATORS);
+    }
+    
+    return NextResponse.json({ error: 'Failed to fetch creators from database' }, { status: 500 });
   }
 }
 
-// Helper to format follower counts
 function formatFollowerCount(count: number): string {
   if (count >= 1000000) {
     return (count / 1000000).toFixed(1) + 'M';
-  }
-  if (count >= 1000) {
+  } else if (count >= 1000) {
     return (count / 1000).toFixed(1) + 'K';
   }
   return count.toString();
-}
-
-// Sample creators as fallback
-function getSampleCreators() {
-  return [
-    {
-      name: "Sarah AI",
-      image: "/creators/sarah.jpg",
-      role: "ML Engineer",
-      models: 12,
-      followers: "5.2K",
-      bio: "Building the next gen of computer vision models",
-      tags: ["#ComputerVision", "#DeepLearning"]
-    },
-    {
-      name: "DataWhiz",
-      image: "/creators/datawhiz.jpg",
-      role: "Data Scientist",
-      models: 8,
-      followers: "3.8K",
-      bio: "Specializing in NLP and text generation",
-      tags: ["#NLP", "#GPT"]
-    },
-    {
-      name: "RoboMaster",
-      image: "/creators/robomaster.jpg",
-      role: "Robotics Engineer",
-      models: 15,
-      followers: "7.1K",
-      bio: "Creating AI models for robotics and automation",
-      tags: ["#Robotics", "#RL"]
-    }
-  ];
 } 

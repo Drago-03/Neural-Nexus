@@ -7,8 +7,8 @@
     "prebuild": "node ./scripts/prepare-build.js",
     "build": "next build",
     "postbuild": "node ./scripts/patch-build.js",
-    "custom-build": "./build-with-cleanup.sh",
-    "custom-vercel-build": "node ./scripts/vercel-build.js",
+    "custom-build": "node build.js",
+    "vercel-build": "node build.js",
     "start": "next start",
     "custom-start": "node dev-server.js",
     "lint": "next lint"
@@ -70,6 +70,7 @@
     "react-dropzone": "^14.2.3",
     "react-google-recaptcha": "^3.1.0",
     "react-hot-toast": "^2.5.2",
+    "react-icons": "^5.5.0",
     "react-lottie-player": "^2.1.0",
     "recharts": "^2.15.3",
     "redis": "^5.0.1",

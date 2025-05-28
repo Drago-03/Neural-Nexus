@@ -9,6 +9,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Checks if the current environment is production
+ */
+export function isProduction(): boolean {
+  return process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE !== 'phase-production-build';
+}
+
+/**
  * Gets the current base URL, handling both client and server environments
  */
 export function getBaseUrl(): string {

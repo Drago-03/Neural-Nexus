@@ -13,7 +13,15 @@ import {
   Sparkles,
   Trophy,
   Rocket,
-  Star
+  Star,
+  Server,
+  Cpu,
+  BarChart3,
+  Network,
+  ShieldCheck,
+  Bot,
+  Share,
+  Download
 } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -435,7 +443,7 @@ const PricingPage = () => {
         </motion.div>
 
         {/* Compute Pricing Options */}
-        <section className="mb-16">
+        <section className="mb-16" id="computing-options">
           <h2 className="text-3xl font-bold mb-10 text-center">Additional Computing Options</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Spaces Hardware */}
@@ -536,6 +544,210 @@ const PricingPage = () => {
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
                   <span>Transparent usage dashboard</span>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* GPU Turbo Scaling */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm"
+            >
+              <h3 className="text-xl font-bold mb-2">GPU Turbo Scaling</h3>
+              <p className="text-gray-400 mb-4">Auto-scaling GPU clusters on demand</p>
+              <div className="mb-4">
+                <span className="text-2xl font-bold">$0.50</span>
+                <span className="text-gray-400">/hour</span>
+              </div>
+              <p className="text-sm text-cyan-400 mb-4">Starting at</p>
+              <ul className="space-y-2">
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>On-demand NVIDIA GPUs</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Automatic cluster scaling</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Real-time performance metrics</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Zero wait time provisioning</span>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* Custom ASIC Support */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm"
+            >
+              <h3 className="text-xl font-bold mb-2">Custom ASIC Support</h3>
+              <p className="text-gray-400 mb-4">Specialized hardware acceleration</p>
+              <div className="mb-4">
+                <span className="text-2xl font-bold">$1.20</span>
+                <span className="text-gray-400">/hour</span>
+              </div>
+              <p className="text-sm text-red-400 mb-4">Starting at</p>
+              <ul className="space-y-2">
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Dedicated TPU/ASIC hardware</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>10x faster inference speed</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Optimized for large models</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Hardware-specific optimizations</span>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* Edge Deployment */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.4 }}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm"
+            >
+              <h3 className="text-xl font-bold mb-2">Edge Deployment</h3>
+              <p className="text-gray-400 mb-4">Push models to IoT devices</p>
+              <div className="mb-4">
+                <span className="text-2xl font-bold">$0.10</span>
+                <span className="text-gray-400">/device/month</span>
+              </div>
+              <p className="text-sm text-violet-400 mb-4">Starting at</p>
+              <ul className="space-y-2">
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Ultra-low latency inference</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Model compression technology</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Optimized for IoT and mobile</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Remote updates and monitoring</span>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* Multi-Region Deployment */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7, duration: 0.4 }}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm"
+            >
+              <h3 className="text-xl font-bold mb-2">Multi-Region Deployment</h3>
+              <p className="text-gray-400 mb-4">Global low-latency inference</p>
+              <div className="mb-4">
+                <span className="text-2xl font-bold">$0.25</span>
+                <span className="text-gray-400">/region/hour</span>
+              </div>
+              <p className="text-sm text-amber-400 mb-4">Starting at</p>
+              <ul className="space-y-2">
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Deploy to 15+ global regions</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Traffic-based auto-routing</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Regional data compliance</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Geo-redundant failover</span>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* Quantum Processing Units */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.4 }}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm"
+            >
+              <h3 className="text-xl font-bold mb-2">Quantum Processing Units</h3>
+              <p className="text-gray-400 mb-4">Next-gen quantum acceleration</p>
+              <div className="mb-4">
+                <span className="text-2xl font-bold">$5.00</span>
+                <span className="text-gray-400">/hour</span>
+              </div>
+              <p className="text-sm text-rose-400 mb-4">Preview pricing</p>
+              <ul className="space-y-2">
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Experimental QPU access</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Quantum ML algorithm library</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Specialized problem acceleration</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Academic research priority</span>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* Serverless Inference */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9, duration: 0.4 }}
+              className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm"
+            >
+              <h3 className="text-xl font-bold mb-2">Serverless Inference</h3>
+              <p className="text-gray-400 mb-4">Pay-per-use compute scaling</p>
+              <div className="mb-4">
+                <span className="text-2xl font-bold">$0.15</span>
+                <span className="text-gray-400">/million predictions</span>
+              </div>
+              <p className="text-sm text-blue-400 mb-4">Starting at</p>
+              <ul className="space-y-2">
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Zero infrastructure management</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Infinite scale potential</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Cold-start optimization</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Cost-effective for variable loads</span>
                 </li>
               </ul>
             </motion.div>

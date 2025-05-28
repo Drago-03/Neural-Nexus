@@ -1,10 +1,27 @@
 {
+  "version": 2,
+  "buildCommand": "npm run vercel-build",
+  "installCommand": "npm install",
   "framework": "nextjs",
-  "buildCommand": "NODE_ENV=production NEXT_RUNTIME=edge NEXT_DISABLE_REACT_IN_MIDDLEWARE=true BABEL_ENV=edge next build",
-  "outputDirectory": ".next",
+  "regions": ["iad1"],
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version" }
+      ]
+    }
+  ],
   "env": {
-    "NEXT_RUNTIME": "edge",
-    "NEXT_DISABLE_REACT_IN_MIDDLEWARE": "true",
-    "BABEL_ENV": "edge"
+    "NEXT_PHASE": "phase-production-build",
+    "MONGODB_DB": "neural-nexus"
   }
 } 

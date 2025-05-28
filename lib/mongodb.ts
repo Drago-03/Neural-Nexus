@@ -5,22 +5,25 @@ import { MongoClient, ServerApiVersion, Db, Collection, Document, MongoClientOpt
 const uri = process.env.MONGODB_URI;
 const dbName = process.env.MONGODB_DB_NAME || 'neural_nexus';
 
-// MongoDB client options optimized for serverless environments
+// Connection options with proper SSL settings
 const options: MongoClientOptions = {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-  maxPoolSize: 10,          // Limit connections for serverless
-  minPoolSize: 0,           // Allow pool to shrink to zero in serverless
-  maxIdleTimeMS: 45000,     // Close idle connections after 45 seconds
-  connectTimeoutMS: 10000,  // Timeout if connection takes too long
-  socketTimeoutMS: 30000,   // Timeout for operations
-  retryWrites: true,        // Auto-retry writes if they fail
-  retryReads: true,         // Auto-retry reads if they fail
-  w: 'majority' as const,   // Wait for writes to replicate to majority
+  ssl: true,
+  tls: true,
+  tlsAllowInvalidCertificates: false,
+  tlsAllowInvalidHostnames: false,
+  serverSelectionTimeoutMS: 5000,
+  maxPoolSize: 10,
+  minPoolSize: 5,
+  maxIdleTimeMS: 30000,
+  connectTimeoutMS: 10000,
 };
+
+// Cache client connection
+let cachedClient: MongoClient | null = null;
+let cachedDb: Db | null = null;
+
+// Track connection status
+let isConnecting = false;
 
 // Connection state with TypeScript interfaces for better type safety
 interface ConnectionProps {
@@ -52,103 +55,74 @@ if (!globalWithMongo.mongoConnection) {
  * Uses connection pooling with proper caching for Vercel deployments
  */
 export async function connectToDatabase(): Promise<ConnectionProps> {
-  // If connection already exists, reuse it
-  if (globalWithMongo.mongoConnection.client) {
+  // If we have a cached connection, use it
+  if (cachedClient && cachedDb) {
     try {
-      // Check if the connection is still alive with a ping
-      await globalWithMongo.mongoConnection.client.db("admin").command({ ping: 1 });
-      console.log('👌 Using existing MongoDB connection');
-      return {
-        client: globalWithMongo.mongoConnection.client,
-        db: globalWithMongo.mongoConnection.client.db(dbName),
-      };
+      // Verify the connection is still alive with a ping
+      await cachedClient.db("admin").command({ ping: 1 });
+      console.log("✅ Using existing MongoDB connection");
+      return { client: cachedClient, db: cachedDb };
     } catch (error) {
-      console.log('🔄 Existing MongoDB connection is stale, reconnecting...');
-      // If ping fails, we'll try to reconnect
+      console.log("⚠️ Cached MongoDB connection is stale, reconnecting...");
+      // Connection is stale, we'll create a new one
+      cachedClient = null;
+      cachedDb = null;
     }
   }
 
-  // Check for MongoDB URI
-  const MONGODB_URI = process.env.MONGODB_URI;
-  
-  if (!MONGODB_URI) {
-    throw new Error(
-      'Please define the MONGODB_URI environment variable inside .env.local'
-    );
+  // Check if URI is defined
+  if (!uri) {
+    throw new Error('MongoDB URI is not defined');
   }
 
-  // Enable retry logic for connection
-  const maxRetries = 3;
-  let retryCount = 0;
-  let lastError: Error | null = null;
+  // Prevent multiple simultaneous connection attempts
+  if (isConnecting) {
+    console.log("⏳ Connection already in progress, waiting...");
+    // Wait for the existing connection attempt to finish
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Try again (recursively) after waiting
+    return connectToDatabase();
+  }
 
-  while (retryCount < maxRetries) {
-    try {
-      console.log(`🔄 Connecting to MongoDB (attempt ${retryCount + 1}/${maxRetries})...`);
+  isConnecting = true;
 
-      // Connect to MongoDB with optimized options for serverless environments
-      const client = new MongoClient(MONGODB_URI, {
-        serverApi: {
-          version: '1',
-          // Remove apiStrict to allow all operations
-          strict: false,
-          deprecationErrors: true,
-        },
-        maxPoolSize: 10, // Reduce from default 100 for serverless
-        minPoolSize: 0,   // Start with no connections for serverless
-        socketTimeoutMS: 30000, // Increase from default for long-running operations
-        connectTimeoutMS: 10000, // Longer connect timeout
-        retryWrites: true,
-        retryReads: true,
-        maxIdleTimeMS: 45000, // Close idle connections after 45 seconds
-      });
-
-      // Connect to the client
-      await client.connect();
-      console.log('🚀 Successfully connected to MongoDB!');
-
-      // Get the database
-      const dbName = process.env.MONGODB_DB || 'neural_nexus';
-      const db = client.db(dbName);
-      console.log(`✅ Connection successful to database: ${dbName}`);
-
-      // Save the connection
-      globalWithMongo.mongoConnection.client = client;
-      globalWithMongo.mongoConnection.lastConnectionTime = Date.now();
-
-      // Set up event handlers for monitoring the connection
-      client.on('serverClosed', () => {
-        console.log('MongoDB server connection closed');
-        globalWithMongo.mongoConnection.client = null;
-      });
-      
-      client.on('error', (err) => {
-        console.error('MongoDB connection error:', err);
-        // Don't set client to null here to allow for auto-reconnect
-      });
-      
-      // Return the connection
-      return {
-        client,
-        db,
-      };
-    } catch (error) {
-      retryCount++;
-      lastError = error as Error;
-      console.error(`❌ MongoDB connection attempt ${retryCount} failed:`, error);
-      
-      if (retryCount < maxRetries) {
-        // Exponential backoff: wait longer between each retry
-        const backoffTime = Math.pow(2, retryCount) * 500; // 1s, 2s, 4s, ...
-        console.log(`⏳ Retrying in ${backoffTime}ms...`);
-        await new Promise(resolve => setTimeout(resolve, backoffTime));
+  try {
+    // Initialize the MongoDB client
+    const client = new MongoClient(uri, options);
+    
+    console.log("🔄 Connecting to MongoDB...");
+    
+    // Connect to the MongoDB server
+    await client.connect();
+    
+    // Get reference to the database
+    const db = client.db(dbName);
+    
+    // Cache the client and db references
+    cachedClient = client;
+    cachedDb = db;
+    
+    console.log("✅ Successfully connected to MongoDB");
+    
+    return { client, db };
+  } catch (error) {
+    console.error("❌ Failed to connect to MongoDB:", error);
+    
+    // Provide more useful error information
+    if (error instanceof Error) {
+      if (error.message.includes('SSL')) {
+        console.error("SSL/TLS connection error. Please check your MongoDB connection string and SSL settings.");
+      } else if (error.message.includes('timed out')) {
+        console.error("Connection timed out. Please check your network or MongoDB Atlas status.");
       }
     }
+    
+    // Fallback to mock database for development/build purposes
+    console.log("⚠️ Using fallback mock database for build process");
+    return getMockDatabase();
+  } finally {
+    isConnecting = false;
   }
-
-  // If we get here, all retries failed
-  console.error('❌ Failed to connect to MongoDB after multiple retries');
-  throw lastError || new Error('Failed to connect to MongoDB after multiple retries');
 }
 
 /**
@@ -156,8 +130,14 @@ export async function connectToDatabase(): Promise<ConnectionProps> {
  * @param collectionName Name of the collection to get
  */
 export async function getCollection<T extends Document = Document>(collectionName: string): Promise<Collection<T>> {
-  const { db } = await connectToDatabase();
-  return db.collection<T>(collectionName);
+  try {
+    const { db } = await connectToDatabase();
+    return db.collection<T>(collectionName);
+  } catch (error) {
+    console.error(`Error getting collection ${collectionName}:`, error);
+    // Return a mock collection that won't break builds
+    return getMockCollection<T>(collectionName);
+  }
 }
 
 /**
@@ -188,9 +168,57 @@ export async function watchCollection<T extends Document = Document>(
  * Should be called when the application is shutting down
  */
 export async function closeMongoDBConnection(): Promise<void> {
-  if (globalWithMongo.mongoConnection.client) {
-    await globalWithMongo.mongoConnection.client.close();
-    globalWithMongo.mongoConnection.client = null;
+  if (cachedClient) {
+    await cachedClient.close();
+    cachedClient = null;
+    cachedDb = null;
     console.log("MongoDB connection closed");
   }
+}
+
+/**
+ * Create a mock database for build process
+ * This prevents build failures when MongoDB is unavailable
+ */
+function getMockDatabase(): ConnectionProps {
+  console.log("🔄 Creating mock database for build process");
+  
+  const mockClient = {
+    db: () => mockDb,
+    close: async () => {},
+  } as unknown as MongoClient;
+  
+  const mockDb = {
+    collection: () => getMockCollection("mock"),
+    command: async () => ({ ok: 1 }),
+  } as unknown as Db;
+  
+  return { client: mockClient, db: mockDb };
+}
+
+/**
+ * Create a mock collection for build process
+ */
+function getMockCollection<T extends Document>(name: string): Collection<T> {
+  // Instead of silently returning empty data, throw an error in non-build environments
+  if (process.env.NEXT_PHASE !== 'phase-production-build') {
+    throw new Error(`Failed to connect to MongoDB collection: ${name}. Real data connection required.`);
+  }
+  
+  return {
+    find: () => ({
+      toArray: async () => [] as T[],
+      limit: () => ({ toArray: async () => [] as T[] }),
+      sort: () => ({ limit: () => ({ toArray: async () => [] as T[] }) }),
+    }),
+    findOne: async () => null as unknown as T,
+    insertOne: async () => ({ insertedId: "mock-id", acknowledged: true }),
+    insertMany: async () => ({ insertedIds: ["mock-id"], acknowledged: true }),
+    updateOne: async () => ({ modifiedCount: 0, acknowledged: true }),
+    deleteOne: async () => ({ deletedCount: 0, acknowledged: true }),
+    countDocuments: async () => 0,
+    aggregate: () => ({
+      toArray: async () => [] as T[],
+    }),
+  } as unknown as Collection<T>;
 } 

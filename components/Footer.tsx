@@ -125,6 +125,11 @@ const Footer = () => {
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link href="/admin/login" className="text-gray-400 hover:text-white transition-colors">
+                  Admin Login
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

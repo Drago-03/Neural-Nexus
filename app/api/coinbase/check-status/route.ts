@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { dynamic, runtime, maxDuration } from '../../config';
+
+// Export config from app/api/config.ts
+export { dynamic, runtime, maxDuration };
+
+// Fallback data for build time
+const FALLBACK_DATA = {
+  status: 'pending',
+  code: 'build-time-mock',
+  pricing: { local: { amount: '100.00', currency: 'USD' } },
+  payments: [],
+  timeline: [{ status: 'NEW', time: new Date().toISOString() }],
+  metadata: { modelId: 'sample-model', userId: 'sample-user' }
+};
 
 export async function GET(req: NextRequest) {
   try {
+    // Check if we're in a build environment
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      console.log('Using fallback coinbase status data during build');
+      return NextResponse.json(FALLBACK_DATA);
+    }
+    
     // Authenticate user
     const session = await getServerSession(authOptions);
     

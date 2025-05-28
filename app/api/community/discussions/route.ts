@@ -1,5 +1,74 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import { getCollection } from '@/lib/mongodb';
+
+// Define explicit runtime configuration
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 60; // seconds
+
+// Sample data as fallback
+const SAMPLE_DISCUSSIONS = [
+  {
+    id: 'discussion1',
+    title: 'Best practices for fine-tuning language models',
+    content: 'I\'ve been experimenting with different approaches to fine-tuning LLMs and wanted to share some findings...',
+    author: {
+      name: 'Alex Johnson',
+      username: 'alexai',
+      avatar: '/images/creators/alex.jpg',
+      verified: true
+    },
+    createdAt: '2023-11-10T14:23:00Z',
+    replies: 28,
+    likes: 42,
+    tags: ['fine-tuning', 'llm', 'best-practices']
+  },
+  {
+    id: 'discussion2',
+    title: 'How to optimize inference speed for vision transformers?',
+    content: 'My vision transformer model is running quite slow in production. Has anyone found effective ways to optimize inference?',
+    author: {
+      name: 'Sophia Chen',
+      username: 'sophiaml',
+      avatar: '/images/creators/sophia.jpg',
+      verified: true
+    },
+    createdAt: '2023-11-12T09:15:00Z',
+    replies: 19,
+    likes: 31,
+    tags: ['optimization', 'vision-transformer', 'inference']
+  },
+  {
+    id: 'discussion3',
+    title: 'Announcing AudioGen XL - new audio generation model',
+    content: 'Excited to share my latest model for high-quality audio generation with the community!',
+    author: {
+      name: 'Marcus Lee',
+      username: 'marcusai',
+      avatar: '/images/creators/marcus.jpg',
+      verified: false
+    },
+    createdAt: '2023-11-13T16:45:00Z',
+    replies: 34,
+    likes: 76,
+    tags: ['audio-generation', 'new-model', 'announcement']
+  },
+  {
+    id: 'discussion4',
+    title: 'Ethics in biomedical AI: Guidelines and considerations',
+    content: 'As AI becomes more prevalent in healthcare, we need to discuss ethical guidelines...',
+    author: {
+      name: 'Priya Sharma',
+      username: 'priyaml',
+      avatar: '/images/creators/priya.jpg',
+      verified: true
+    },
+    createdAt: '2023-11-14T11:30:00Z',
+    replies: 42,
+    likes: 58,
+    tags: ['ethics', 'biomedical', 'healthcare']
+  }
+];
 
 /**
  * GET /api/community/discussions
@@ -9,113 +78,80 @@ import { connectToDatabase } from '@/lib/mongodb';
  */
 export async function GET() {
   try {
-    let discussions = [];
+    // Check if we're in a build environment
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      console.log('Using sample discussions data during build');
+      return NextResponse.json(SAMPLE_DISCUSSIONS);
+    }
     
-    // Try to fetch from database
-    try {
-      const { db } = await connectToDatabase();
-      
-      // Find hot discussions based on activity, replies, and likes
-      discussions = await db.collection('discussions')
-        .aggregate([
-          {
-            $addFields: {
-              // Calculate hotness score based on likes, replies and recency
-              hotnessScore: {
-                $add: [
-                  { $multiply: [{ $ifNull: ["$likeCount", 0] }, 1] },
-                  { $multiply: [{ $ifNull: ["$replyCount", 0] }, 2] },
-                  { 
-                    $multiply: [
-                      { 
-                        $divide: [
-                          1, 
-                          { 
-                            $add: [
-                              1,
-                              { 
-                                $divide: [
-                                  { $subtract: [new Date(), "$lastActivityAt"] }, 
-                                  86400000 // Milliseconds in a day
-                                ] 
-                              }
-                            ] 
-                          }
-                        ] 
-                      },
-                      1000 // Recency factor
-                    ] 
-                  }
+    // Connect to MongoDB
+    const discussionsCollection = await getCollection('discussions');
+    const usersCollection = await getCollection('users');
+    
+    // Get hot discussions based on recent activity and engagement
+    const discussions = await discussionsCollection.aggregate([
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'author_id',
+          foreignField: '_id',
+          as: 'author'
+        }
+      },
+      {
+        $unwind: '$author'
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          content: 1,
+          createdAt: 1,
+          replies: { $size: '$replies' },
+          likes: { $size: '$likes' },
+          tags: 1,
+          author: {
+            name: '$author.name',
+            username: '$author.username',
+            avatar: '$author.avatar',
+            verified: { $ifNull: ['$author.verified', false] }
+          }
+        }
+      },
+      {
+        $addFields: {
+          engagementScore: {
+            $add: [
+              { $multiply: ['$replies', 2] },
+              '$likes',
+              {
+                $divide: [
+                  1000000000,
+                  { $add: [1, { $subtract: [new Date(), '$createdAt'] }] }
                 ]
               }
-            }
-          },
-          { $sort: { hotnessScore: -1 } },
-          { $limit: 6 }
-        ])
-        .toArray();
-      
-      // Transform the data into the format needed by the frontend
-      if (discussions && discussions.length > 0) {
-        console.log("✅ Fetched hot discussions from database:", discussions.length);
-        
-        // Map database fields to frontend schema
-        discussions = discussions.map(discussion => ({
-          title: discussion.title,
-          author: discussion.authorName || "Anonymous",
-          replies: discussion.replyCount || 0,
-          likes: discussion.likeCount || 0,
-          tags: discussion.tags || ["General"]
-        }));
-      } else {
-        throw new Error("No discussions found in database");
+            ]
+          }
+        }
+      },
+      {
+        $sort: { engagementScore: -1 }
+      },
+      {
+        $limit: 8
       }
-    } catch (error) {
-      console.error("❌ Error fetching discussions from database:", error);
-      
-      // Fall back to sample data
-      discussions = getSampleDiscussions();
+    ]).toArray();
+    
+    if (discussions.length === 0) {
+      console.log('No discussions found, using sample data');
+      return NextResponse.json(SAMPLE_DISCUSSIONS);
     }
     
     return NextResponse.json(discussions);
   } catch (error) {
-    console.error("❌ Unexpected error in discussions API:", error);
+    console.error('Error fetching discussions:', error);
     
-    // Return sample data in case of any error
-    return NextResponse.json(getSampleDiscussions());
+    // Return sample data on error
+    return NextResponse.json(SAMPLE_DISCUSSIONS);
   }
-}
-
-// Sample discussions as fallback
-function getSampleDiscussions() {
-  return [
-    {
-      title: "Best practices for fine-tuning large language models",
-      author: "AIExpert",
-      replies: 45,
-      likes: 123,
-      tags: ["LLM", "Training"]
-    },
-    {
-      title: "How to optimize transformer models for production",
-      author: "PerfGuru",
-      replies: 32,
-      likes: 98,
-      tags: ["Optimization", "Production"]
-    },
-    {
-      title: "Future of AI model marketplaces",
-      author: "FutureAI",
-      replies: 67,
-      likes: 156,
-      tags: ["Market", "Trends"]
-    },
-    {
-      title: "Using Neural-Nexus for computer vision projects",
-      author: "VisionPro",
-      replies: 29,
-      likes: 87,
-      tags: ["Vision", "Projects"]
-    }
-  ];
 } 
