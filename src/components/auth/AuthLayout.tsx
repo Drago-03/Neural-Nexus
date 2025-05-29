@@ -86,6 +86,19 @@ export default function AuthLayout({
 }: AuthLayoutProps) {
   const [hoveredPanel, setHoveredPanel] = useState<'left' | 'right' | null>(null);
 
+  const handlePanelFocus = (panel: 'left' | 'right') => {
+    setHoveredPanel(panel);
+  };
+
+  const handlePanelBlur = () => {
+    setHoveredPanel(null);
+  };
+
+  const handlePanelKeyDown = (event: React.KeyboardEvent, panel: 'left' | 'right') => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      setHoveredPanel(panel);
+    }
+  };
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex flex-col relative overflow-hidden">
       
