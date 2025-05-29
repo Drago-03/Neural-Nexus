@@ -62,7 +62,7 @@ export default function SignUpPage() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  
+
   // Rate limiting state
   const [rateLimitState, setRateLimitState] = useState<RateLimitState>({
     attempts: 0,
@@ -70,19 +70,19 @@ export default function SignUpPage() {
     blocked: false,
     blockExpiry: 0
   });
-  
+
   const { supabase } = useSupabase();
   const router = useRouter();
   const searchParams = useSearchParams();
   const recaptchaRef = useRef<ReCAPTCHA>(null);
-  
+
   // Create debounced validation functions
   const debouncedValidations = {
     firstName: useRef(debounce((value: string) => {
       const result = checkNameVibe(value);
       updateField('firstName', { valid: result.valid, error: result.message, validating: false });
     }, 400)).current,
-    
+
     lastName: useRef(debounce((value: string) => {
       if (!value) {
         // Last name is optional
@@ -92,7 +92,7 @@ export default function SignUpPage() {
       const result = checkNameVibe(value);
       updateField('lastName', { valid: result.valid, error: result.message, validating: false });
     }, 400)).current,
-    
+
     username: useRef(debounce(async (value: string) => {
       // First check basic format
       const result = checkUsernameVibe(value);
@@ -100,13 +100,13 @@ export default function SignUpPage() {
         updateField('username', { valid: false, error: result.message, validating: false });
         return;
       }
-      
+
       // Then check if username is already taken
       try {
         // This would be a real API call in production
         // For now, just simulate a check
         const isTaken = ['admin', 'root', 'system', 'neural', 'nexus'].includes(value.toLowerCase());
-        
+
         if (isTaken) {
           updateField('username', { 
             valid: false, 
@@ -121,7 +121,7 @@ export default function SignUpPage() {
         updateField('username', { valid: result.valid, error: result.message, validating: false });
       }
     }, 600)).current,
-    
+
     email: useRef(debounce(async (value: string) => {
       // First check format
       const result = checkEmailVibe(value);
@@ -129,13 +129,13 @@ export default function SignUpPage() {
         updateField('email', { valid: false, error: result.message, validating: false });
         return;
       }
-      
+
       // Then check if email is already registered
       try {
         // This would be a real API call in production
         // For now, just simulate a check
         const isRegistered = value.includes('taken') || value.includes('exists');
-        
+
         if (isRegistered) {
           updateField('email', { 
             valid: false, 
@@ -150,7 +150,7 @@ export default function SignUpPage() {
         updateField('email', { valid: result.valid, error: result.message, validating: false });
       }
     }, 600)).current,
-    
+
     password: useRef(debounce((value: string) => {
       const result = checkPasswordStrength(value);
       updateField('password', { 
@@ -158,7 +158,7 @@ export default function SignUpPage() {
         error: result.valid ? undefined : result.message, 
         validating: false 
       });
-      
+
       // Also validate confirm password if it's been touched
       if (fields.confirmPassword.touched) {
         const matchResult = checkPasswordsMatch(value, fields.confirmPassword.value);
@@ -169,7 +169,7 @@ export default function SignUpPage() {
         });
       }
     }, 400)).current,
-    
+
     confirmPassword: useRef(debounce((value: string) => {
       const result = checkPasswordsMatch(fields.password.value, value);
       updateField('confirmPassword', { 
@@ -179,13 +179,13 @@ export default function SignUpPage() {
       });
     }, 300)).current,
   };
-  
+
   // Set isClient to true when component mounts to ensure we only access browser APIs on the client
   useEffect(() => {
     if (typeof window !== 'undefined') {
       // Mark that we're on the client
       setIsClient(true);
-      
+
       // Check for error message in URL - use safe access
       const errorMsg = searchParams?.get ? searchParams.get('error') : null;
       if (errorMsg) {
@@ -196,14 +196,14 @@ export default function SignUpPage() {
           console.error("Error showing toast:", err);
         });
       }
-      
+
       // Stop loading after a short delay to ensure smooth transition
       setTimeout(() => {
         setIsLoading(false);
       }, 300);
     }
   }, [searchParams]);
-  
+
   // Helper function to update a field's state
   const updateField = (fieldName: keyof typeof fields, updates: Partial<FieldState>) => {
     setFields(prev => ({
@@ -214,41 +214,41 @@ export default function SignUpPage() {
       }
     }));
   };
-  
+
   // Handle input change with validation
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     // Update the field value and mark as touched and validating
     updateField(name as keyof typeof fields, {
       value,
       touched: true,
       validating: true
     });
-    
+
     // Clear general error when user starts typing
     if (error && error.field === name) {
       setError(null);
     }
-    
+
     // Use the appropriate debounced validation function
     if (name in debouncedValidations) {
       debouncedValidations[name as keyof typeof debouncedValidations](value);
     }
   };
-  
+
   // Handle terms checkbox change
   const handleTermsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTermsAccepted(e.target.checked);
   };
-  
+
   // Reset captcha when it's shown
   useEffect(() => {
     if (showCaptcha && recaptchaRef.current) {
       recaptchaRef.current.reset();
     }
   }, [showCaptcha]);
-  
+
   const handleCaptchaChange = (token: string | null) => {
     setCaptchaToken(token);
     if (token) {
@@ -256,26 +256,26 @@ export default function SignUpPage() {
       setError(null);
     }
   };
-  
+
   // Validate the entire form
   const validateForm = () => {
     let isValid = true;
     let firstInvalidField: keyof typeof fields | null = null;
-    
+
     // Check each required field
     const requiredFields: (keyof typeof fields)[] = ['firstName', 'username', 'email', 'password', 'confirmPassword'];
-    
+
     for (const field of requiredFields) {
       // Skip if already valid
       if (fields[field].valid) continue;
-      
+
       // Mark field as touched to show validation errors
       updateField(field, { touched: true });
-      
+
       // Set field-specific error message if not already set
       if (!fields[field].error) {
         let errorMessage = `${field} is required`;
-        
+
         switch (field) {
           case 'firstName':
             errorMessage = "First name can't be empty, bestie!";
@@ -293,18 +293,18 @@ export default function SignUpPage() {
             errorMessage = "Please confirm your password!";
             break;
         }
-        
+
         updateField(field, { error: errorMessage });
       }
-      
+
       // Track the first invalid field to focus it later
       if (!firstInvalidField) {
         firstInvalidField = field;
       }
-      
+
       isValid = false;
     }
-    
+
     // Check terms acceptance
     if (!termsAccepted) {
       setError({
@@ -313,18 +313,18 @@ export default function SignUpPage() {
       });
       isValid = false;
     }
-    
+
     return isValid;
   };
-  
+
   // Handle sign up form submission
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     // Validate all fields
     if (!validateForm()) return;
-    
+
     // Check rate limiting
     const rateLimitCheck = checkRateLimit(rateLimitState);
     if (!rateLimitCheck.allowed) {
@@ -333,15 +333,15 @@ export default function SignUpPage() {
         message: rateLimitCheck.message || "Too many sign-up attempts. Try again later."
       });
       setRateLimitState(rateLimitCheck.newState);
-      
+
       // Show CAPTCHA after multiple attempts
       if (rateLimitCheck.newState.attempts >= 2) {
         setShowCaptcha(true);
       }
-      
+
       return;
     }
-    
+
     // If CAPTCHA is shown but not completed
     if (showCaptcha && !captchaToken) {
       setError({
@@ -350,13 +350,13 @@ export default function SignUpPage() {
       });
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const baseUrl = getBaseUrl();
       // Get callback URL if provided in the search params
       const callbackUrl = searchParams?.get('callback') || searchParams?.get('redirect') || '/dashboard';
-      
+
       // Sign up with Supabase
       const { error } = await supabase.auth.signUp({
         email: fields.email.value,
@@ -372,25 +372,25 @@ export default function SignUpPage() {
           emailRedirectTo: `${baseUrl}/auth/callback?callbackUrl=${encodeURIComponent(callbackUrl)}`
         }
       });
-      
+
       if (error) throw error;
-      
+
       // Success message - use dynamic import for toast
       if (isClient) {
         const { toast } = await import('react-hot-toast');
         toast.success("Account created! Please check your email to verify your account.");
       }
-      
+
       // Redirect to sign-in with the callback preserved
       router.push(`/signin?callback=${encodeURIComponent(callbackUrl)}`);
-      
+
     } catch (err: any) {
       console.error('Sign up error:', err);
-      
+
       // Handle specific error messages with user-friendly text
       let errorMessage = err.message || 'Failed to create account';
       let errorField: AuthError['field'] = 'general';
-      
+
       if (err.message.includes("email")) {
         errorField = 'email';
         if (err.message.includes("already registered")) {
@@ -404,30 +404,30 @@ export default function SignUpPage() {
           errorMessage = "This username is already taken. Try another one!";
         }
       }
-      
+
       setError({
         field: errorField,
         message: errorMessage
       });
-      
+
       // Update rate limit state
       const updatedRateLimitState = {
         ...rateLimitState,
         attempts: rateLimitState.attempts + 1,
         lastAttempt: Date.now()
       };
-      
+
       // Show CAPTCHA after 2 failed attempts
       if (updatedRateLimitState.attempts >= 2) {
         setShowCaptcha(true);
       }
-      
+
       setRateLimitState(updatedRateLimitState);
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   // OAuth sign up handlers
   const handleGithubSignUp = async () => {
     setIsLoading(true);
@@ -435,7 +435,7 @@ export default function SignUpPage() {
       const baseUrl = getBaseUrl();
       // Get callback URL if provided in the search params
       const callbackUrl = searchParams?.get('callback') || searchParams?.get('redirect') || '/dashboard';
-      
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
@@ -447,7 +447,7 @@ export default function SignUpPage() {
           }
         },
       });
-      
+
       if (error) throw error;
     } catch (err: any) {
       console.error('GitHub sign up error:', err);
@@ -458,14 +458,14 @@ export default function SignUpPage() {
       setIsLoading(false);
     }
   };
-  
+
   const handleGoogleSignUp = async () => {
     setIsLoading(true);
     try {
       const baseUrl = getBaseUrl();
       // Get callback URL if provided in the search params
       const callbackUrl = searchParams?.get('callback') || searchParams?.get('redirect') || '/dashboard';
-      
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -477,7 +477,7 @@ export default function SignUpPage() {
           }
         },
       });
-      
+
       if (error) throw error;
     } catch (err: any) {
       console.error('Google sign up error:', err);
@@ -488,13 +488,13 @@ export default function SignUpPage() {
       setIsLoading(false);
     }
   };
-  
+
   // Get validation status icon for a field
   const getStatusIcon = (fieldName: keyof typeof fields) => {
     const field = fields[fieldName];
     if (!field.touched) return null;
     if (field.validating) return null;
-    
+
     return field.valid ? 
       <CheckCircle className="h-5 w-5 text-green-500" /> : 
       <XCircle className="h-5 w-5 text-red-500" />;
@@ -531,7 +531,7 @@ export default function SignUpPage() {
             <p className="text-red-300 text-sm">{error.message}</p>
           </motion.div>
         )}
-        
+
         <form onSubmit={handleSignUp} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <Input
@@ -547,7 +547,7 @@ export default function SignUpPage() {
               required
               autoComplete="given-name"
             />
-            
+
             <Input
               label="Last Name"
               type="text"
@@ -561,7 +561,7 @@ export default function SignUpPage() {
               autoComplete="family-name"
             />
           </div>
-          
+
           <Input
             label="Username"
             type="text"
@@ -575,7 +575,7 @@ export default function SignUpPage() {
             required
             autoComplete="username"
           />
-          
+
           <Input
             label="Email"
             type="email"
@@ -589,7 +589,7 @@ export default function SignUpPage() {
             required
             autoComplete="email"
           />
-          
+
           <div>
             <Input
               label="Password"
@@ -604,13 +604,13 @@ export default function SignUpPage() {
               required
               autoComplete="new-password"
             />
-            
+
             {/* Password strength meter */}
             {fields.password.value && (
               <PasswordStrengthMeter password={fields.password.value} />
             )}
           </div>
-          
+
           <Input
             label="Confirm Password"
             type="password"
@@ -624,7 +624,7 @@ export default function SignUpPage() {
             required
             autoComplete="new-password"
           />
-          
+
           <div className="flex items-center mt-4">
             <input
               type="checkbox"
@@ -640,7 +640,7 @@ export default function SignUpPage() {
               <Link href="/privacy" className="text-blue-400 hover:text-blue-300">Privacy Policy</Link>
             </label>
           </div>
-          
+
           {showCaptcha && (
             <div className="flex justify-center my-4">
               <ReCAPTCHA
@@ -651,7 +651,7 @@ export default function SignUpPage() {
               />
             </div>
           )}
-          
+
           <Button
             type="submit"
             variant="primary"
@@ -662,7 +662,7 @@ export default function SignUpPage() {
             Create Account
           </Button>
         </form>
-        
+
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-700" />
@@ -673,7 +673,7 @@ export default function SignUpPage() {
             </span>
           </div>
         </div>
-        
+
         <div className="space-y-3">
           <Button
             variant="secondary"
@@ -684,7 +684,7 @@ export default function SignUpPage() {
           >
             Continue with GitHub
           </Button>
-          
+
           <Button
             variant="secondary"
             className="w-full bg-gray-800 hover:bg-gray-700 text-white"
@@ -702,7 +702,7 @@ export default function SignUpPage() {
             Continue with Google
           </Button>
         </div>
-        
+
         <p className="text-center text-sm text-gray-400 mt-8">
           Already have an account?{' '}
           <Link
