@@ -16,17 +16,23 @@ const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined
 
 // Provider component to wrap around the app
 export default function SupabaseProvider({ children }: { children: ReactNode }) {
+  // Get environment variables with fallbacks
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://gtqeeihydjqvidqleawe.supabase.co';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0cWVlaWh5ZGpxdmlkcWxlYXdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDYwNTk5NTQsImV4cCI6MjAyMTYzNTk1NH0.SSUgWgNpaxwRGkbhxVCZtomk_M7jaesZ_tLCzYVn8jg';
+  const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Neural Nexus';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://neuralnexus.biz';
+  
   const [supabase] = useState(() => 
     createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://gtqeeihydjqvidqleawe.supabase.co',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0cWVlaWh5ZGpxdmlkcWxlYXdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDYwNTk5NTQsImV4cCI6MjAyMTYzNTk1NH0.SSUgWgNpaxwRGkbhxVCZtomk_M7jaesZ_tLCzYVn8jg',
+      supabaseUrl,
+      supabaseAnonKey,
       {
         auth: {
           flowType: 'pkce', // Use PKCE flow for more secure auth
           autoRefreshToken: true,
           persistSession: true,
-          detectSessionInUrl: true, // Changed to true to detect auth response in URL
-          storageKey: 'neural-nexus-auth', // Add a custom storage key
+          detectSessionInUrl: true,
+          storageKey: 'neural-nexus-auth',
           storage: {
             getItem: (key) => {
               if (typeof window === 'undefined') return null;
@@ -41,6 +47,13 @@ export default function SupabaseProvider({ children }: { children: ReactNode }) 
                 window.localStorage.removeItem(key);
             },
           },
+        },
+        global: {
+          // Set headers for better identification in Supabase logs
+          headers: {
+            'x-application-name': siteName,
+            'x-site-url': siteUrl
+          }
         }
       }
     )

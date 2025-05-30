@@ -138,7 +138,7 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
 Join our active community to get help, share ideas, and connect with other developers!
 
 <div align="center">
-  <a href="https://discord.gg/neuralnexus"><img src="https://img.shields.io/badge/Discord-Join%20Our%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://discord.gg/9bPsjgnJ5v"><img src="https://img.shields.io/badge/Discord-Join%20Our%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
   <a href="https://twitter.com/NeuralNexusAI"><img src="https://img.shields.io/badge/Twitter-Follow%20Us-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" alt="Twitter"></a>
   <a href="https://github.com/Drago-03/Neural-Nexus/discussions"><img src="https://img.shields.io/badge/GitHub-Discussions-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Discussions"></a>
 </div>

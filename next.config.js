@@ -4,6 +4,11 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: false,
   
+  // Performance optimization
+  distDir: '.next',
+  productionBrowserSourceMaps: false,
+  compress: true,
+  
   // Image optimization settings
   images: {
     remotePatterns: [
@@ -44,10 +49,11 @@ const nextConfig = {
   experimental: {
     middlewarePrefetch: 'flexible',
     serverComponentsExternalPackages: ['mongodb'],
+    webpackBuildWorker: true,
   },
   
   // Increase timeout for builds
-  staticPageGenerationTimeout: 120,
+  staticPageGenerationTimeout: 300,
   
   // Configure headers for API routes
   async headers() {
@@ -77,7 +83,7 @@ const nextConfig = {
   },
   
   // Webpack configuration
-  webpack: (config, { isEdgeRuntime, isServer }) => {
+  webpack: (config, { isEdgeRuntime, isServer, dev }) => {
     // Handle Edge runtime (middleware)
     if (isEdgeRuntime) {
       const originalEntry = config.entry;
@@ -126,9 +132,62 @@ const nextConfig = {
         dns: false,
         child_process: false,
       };
+      
+      // Increase chunk loading timeout for client
+      config.output.chunkLoadTimeout = 120000; // 2 minutes
+      
+      // Optimize chunk sizes
+      if (!dev) {
+        // Increase the size limits for production
+        const ONE_MEGABYTE = 1024 * 1024;
+        config.optimization.splitChunks = {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Make a specific chunk for big dependencies
+            framework: {
+              name: 'framework',
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/](react|react-dom|next|@vercel)[\\/]/,
+              priority: 40,
+              enforce: true,
+            },
+            // Group Web3 libraries together
+            web3: {
+              name: 'web3-vendors',
+              test: /[\\/]node_modules[\\/](web3|ethers|viem|wagmi|@coinbase)[\\/]/,
+              chunks: 'all',
+              priority: 30,
+            },
+            // Group other larger libraries
+            lib: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'lib',
+              chunks: 'all',
+              priority: 20,
+            },
+            // Commons chunk
+            commons: {
+              name: 'commons',
+              minChunks: 2,
+              priority: 10,
+            },
+          },
+          maxInitialRequests: 25,
+          maxAsyncRequests: 25,
+          minSize: 20000,
+          maxSize: ONE_MEGABYTE,
+        };
+      }
     }
     
     return config;
+  },
+  
+  // Configure environment variables for build optimization
+  env: {
+    NEXT_CHUNK_LOAD_TIMEOUT: '120000',
   },
 };
 

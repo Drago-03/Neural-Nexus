@@ -213,27 +213,24 @@ export default function SignInForm() {
   const handleGithubSignIn = async () => {
     setIsLoading(true);
     try {
-      // Get base URL from our utility function
+      // Get base URL and site info
       const baseUrl = getBaseUrl();
-      console.log("BaseURL from getBaseUrl():", baseUrl);
+      const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Neural Nexus';
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://neuralnexus.biz';
       
-      // IMPORTANT OVERRIDE: Force localhost for development
-      // Check if we're in localhost but baseUrl doesn't reflect that
+      // Prepare the callback URL
       let redirectUrl;
       if (typeof window !== 'undefined' && 
-          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
-          !baseUrl.includes('localhost')) {
-        // Force localhost URL for local development
+          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        // Use localhost for development
         const port = window.location.port ? `:${window.location.port}` : '';
         redirectUrl = `http://${window.location.hostname}${port}/auth/callback?callbackUrl=${encodeURIComponent(callbackUrl)}`;
-        console.log("⚠️ FORCING LOCALHOST REDIRECT:", redirectUrl);
       } else {
-        // Use normal baseUrl for production
-        redirectUrl = `${baseUrl}/auth/callback?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+        // Use configured site URL for production
+        redirectUrl = `${siteUrl}/auth/callback?callbackUrl=${encodeURIComponent(callbackUrl)}`;
       }
       
-      console.log("Final redirectTo URL:", redirectUrl);
-      
+      // Call the Supabase OAuth with site name for proper branding
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
@@ -242,6 +239,8 @@ export default function SignInForm() {
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
+            // Add site name for OAuth display
+            site_name: siteName
           }
         },
       });
@@ -257,33 +256,24 @@ export default function SignInForm() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      // Get base URL from our utility function
+      // Get base URL and site info
       const baseUrl = getBaseUrl();
-      console.log("BaseURL from getBaseUrl():", baseUrl);
+      const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Neural Nexus';
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://neuralnexus.biz';
       
-      // IMPORTANT OVERRIDE: Force localhost for development
-      // Check if we're in localhost but baseUrl doesn't reflect that
+      // Prepare the callback URL
       let redirectUrl;
       if (typeof window !== 'undefined' && 
-          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
-          !baseUrl.includes('localhost')) {
-        // Force localhost URL for local development
+          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        // Use localhost for development
         const port = window.location.port ? `:${window.location.port}` : '';
         redirectUrl = `http://${window.location.hostname}${port}/auth/callback?callbackUrl=${encodeURIComponent(callbackUrl)}`;
-        console.log("⚠️ FORCING LOCALHOST REDIRECT:", redirectUrl);
       } else {
-        // Use normal baseUrl for production
-        redirectUrl = `${baseUrl}/auth/callback?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+        // Use configured site URL for production
+        redirectUrl = `${siteUrl}/auth/callback?callbackUrl=${encodeURIComponent(callbackUrl)}`;
       }
       
-      console.log("Final redirectTo URL:", redirectUrl);
-      
-      // Show an alert to display the redirect URL
-      if (typeof window !== 'undefined') {
-        alert(`Using redirect URL: ${redirectUrl}\n\nMake sure this matches your Google OAuth Authorized redirect URIs exactly.`);
-      }
-      
-      // Use the redirectUrl in the OAuth call
+      // Use the redirectUrl in the OAuth call with site name for proper branding
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -292,6 +282,9 @@ export default function SignInForm() {
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
+            // Add site name for OAuth display
+            site_name: siteName,
+            app_name: siteName
           }
         },
       });

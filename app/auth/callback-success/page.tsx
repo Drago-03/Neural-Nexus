@@ -50,75 +50,24 @@ function AuthCallbackContent() {
       return;
     }
 
-    const handleCallback = async () => {
-      try {
-        // First attempt to get the session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          throw sessionError;
-        }
-
-        if (session) {
-          // If we have a session, the user is authenticated
-          setShowConfetti(true);
-          setMessage("Authentication successful! 🎉");
-          toast.success("Authentication successful!");
-          
-          // Redirect after 5 seconds
-          let count = 5;
-          const interval = setInterval(() => {
-            count--;
-            setCountdown(count);
-            if (count <= 0) {
-              clearInterval(interval);
-              router.push(callbackUrl);
-            }
-          }, 1000);
-          
-          return;
-        }
-
-        // If no session, we need to exchange the code
-        const code = searchParams.get("code");
-        if (code) {
-          // Exchange code for session
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          
-          if (exchangeError) {
-            throw exchangeError;
-          }
-          
-          setShowConfetti(true);
-          setMessage("Authentication successful! 🎉");
-          toast.success("You're now signed in!");
-          
-          // Redirect after 5 seconds
-          let count = 5;
-          const interval = setInterval(() => {
-            count--;
-            setCountdown(count);
-            if (count <= 0) {
-              clearInterval(interval);
-              router.push(callbackUrl);
-            }
-          }, 1000);
-        } else {
-          // If no code, we have nothing to do here
-          setError("No authentication code found");
-          setMessage("Authentication failed");
-          toast.error("Authentication failed");
-        }
-      } catch (err: any) {
-        console.error("Auth callback error:", err);
-        setError(err.message || "Authentication failed");
-        setMessage("Authentication failed");
-        toast.error("Authentication failed");
+    // Show success animation right away
+    setShowConfetti(true);
+    setMessage("Authentication successful! 🎉");
+    toast.success("You're now signed in!");
+    
+    // Redirect after 5 seconds
+    let count = 5;
+    const interval = setInterval(() => {
+      count--;
+      setCountdown(count);
+      if (count <= 0) {
+        clearInterval(interval);
+        router.push(callbackUrl);
       }
-    };
+    }, 1000);
 
-    handleCallback();
-  }, [supabase, router, searchParams, callbackUrl]);
+    return () => clearInterval(interval);
+  }, [router, searchParams, callbackUrl]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-gray-900 to-black p-4">
@@ -186,7 +135,7 @@ function AuthCallbackFallback() {
 }
 
 // Main component that uses Suspense
-export default function AuthCallbackPage() {
+export default function AuthCallbackSuccessPage() {
   return (
     <Suspense fallback={<AuthCallbackFallback />}>
       <AuthCallbackContent />

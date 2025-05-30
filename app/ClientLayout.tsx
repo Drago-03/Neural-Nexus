@@ -8,69 +8,32 @@ import SupabaseProvider from '@/providers/SupabaseProvider';
 import AuthProvider from '@/providers/AuthProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import dynamic from 'next/dynamic';
-import { CoinbaseAgentProvider } from '@/providers/CoinbaseAgentProvider';
-import { SimpleCryptoProvider } from '@/providers/SimpleCryptoProvider';
 import AppProvider from '@/providers/AppProvider';
 
-// Dynamic imports to avoid SSR issues
+// Add webpack chunk loading timeout directive - fixes chunk timeout issues
+// @ts-ignore
+// eslint-disable-next-line
+if (typeof window !== 'undefined') {
+  // @ts-ignore
+  window.__NEXT_CHUNK_LOAD_TIMEOUT__ = 120000; // 2 minutes timeout
+}
+
+// Lazy load heavy components
 const AgentKitUI = dynamic(() => import('@/components/AgentKitUI'), { 
-  ssr: false 
+  ssr: false,
+  loading: () => null
 });
 
-// Completely isolated AIAgent component to avoid session provider issues
-const AIAgentComponent = () => {
-  // Use state to ensure this only loads on client after hydration
-  const [isClient, setIsClient] = useState(false);
-  const [errorCount, setErrorCount] = useState(0);
-  const maxRetries = 3;
-  
-  useEffect(() => {
-    // Only set client state after a small delay to ensure hydration is complete
-    const timeout = setTimeout(() => {
-      setIsClient(true);
-    }, 1000);
-    
-    return () => clearTimeout(timeout);
-  }, []);
-  
-  // Don't render if client-side hydration hasn't happened yet
-  // or if we've hit our maximum retry count
-  if (!isClient || errorCount >= maxRetries) return null;
-  
-  try {
-    // Dynamically import component only on client side with error handling
-    const DynamicAIAgent = dynamic(
-      () => import('@/components/AIAgent')
-        .then(mod => mod)
-        .catch(err => {
-          console.error('Failed to load AIAgent component:', err);
-          setErrorCount(prev => prev + 1);
-          return { default: () => null };
-        }),
-      {
-        ssr: false,
-        loading: () => null
-      }
-    );
-    
-    return (
-      <ErrorBoundary 
-        fallback={null} 
-        onError={() => setErrorCount(prev => prev + 1)}
-      >
-        <Suspense fallback={null}>
-          <DynamicAIAgent 
-            systemContext="You are Neural Nexus AI, an assistant for the Neural Nexus platform. You help users with questions about AI development, the platform features, pricing, and technical support."
-          />
-        </Suspense>
-      </ErrorBoundary>
-    );
-  } catch (err) {
-    console.error('Error in AIAgentComponent:', err);
-    setErrorCount(prev => prev + 1);
-    return null;
-  }
-};
+// Lazy load providers that aren't essential for initial render
+const CoinbaseAgentProvider = dynamic(() => import('@/providers/CoinbaseAgentProvider').then(mod => mod.CoinbaseAgentProvider), {
+  ssr: false,
+  loading: () => null
+});
+
+const SimpleCryptoProvider = dynamic(() => import('@/providers/SimpleCryptoProvider').then(mod => mod.SimpleCryptoProvider), {
+  ssr: false,
+  loading: () => null
+});
 
 // Simple error boundary component
 class ErrorBoundary extends React.Component<{
@@ -101,6 +64,37 @@ class ErrorBoundary extends React.Component<{
   }
 }
 
+// Lazy load AIAgent component with a delay to avoid blocking initial render
+const AIAgentComponent = () => {
+  const [shouldLoadAgent, setShouldLoadAgent] = useState(false);
+  
+  useEffect(() => {
+    // Delay loading of AIAgent until after initial render is complete
+    const timer = setTimeout(() => {
+      setShouldLoadAgent(true);
+    }, 3000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  if (!shouldLoadAgent) return null;
+  
+  const DynamicAIAgent = dynamic(() => import('@/components/AIAgent'), { 
+    ssr: false,
+    loading: () => null
+  });
+  
+  return (
+    <ErrorBoundary fallback={null}>
+      <Suspense fallback={null}>
+        <DynamicAIAgent 
+          systemContext="You are Neural Nexus AI, an assistant for the Neural Nexus platform. You help users with questions about AI development, the platform features, pricing, and technical support."
+        />
+      </Suspense>
+    </ErrorBoundary>
+  );
+};
+
 export default function ClientLayout({
   children,
 }: {
@@ -108,29 +102,30 @@ export default function ClientLayout({
 }) {
   return (
     <AuthProvider>
-      <SupabaseProvider>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AppProvider>
-            <SimpleCryptoProvider>
-              <CoinbaseAgentProvider>
-                <div className="relative flex min-h-screen flex-col">
-                  <div className="flex-1">{children}</div>
-                </div>
-                <Analytics />
-                <SpeedInsights />
-                <Toaster position="top-center" />
-                <AgentKitUI />
-                <AIAgentComponent />
-              </CoinbaseAgentProvider>
-            </SimpleCryptoProvider>
-          </AppProvider>
-        </ThemeProvider>
-      </SupabaseProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="dark"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <AppProvider>
+          <div className="relative flex min-h-screen flex-col">
+            <div className="flex-1">{children}</div>
+          </div>
+          <Analytics />
+          <SpeedInsights />
+          <Toaster position="top-center" />
+          
+          {/* Lazy-loaded non-critical components */}
+          <Suspense fallback={null}>
+            <AgentKitUI />
+          </Suspense>
+          
+          <Suspense fallback={null}>
+            <AIAgentComponent />
+          </Suspense>
+        </AppProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 } 

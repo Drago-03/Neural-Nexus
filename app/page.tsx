@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -22,6 +22,16 @@ import Image from 'next/image';
 import { useAppContext } from '@/providers/AppProvider';
 import { useSupabase } from '@/providers/SupabaseProvider';
 
+// Platform stats interface
+interface PlatformStats {
+  activeUsers: number;
+  monthlyGrowth: number;
+  models: number;
+  countries: number;
+  apiCalls: number;
+  lastUpdated?: string;
+}
+
 export default function HomePage() {
   const [showSplash, setShowSplash] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -30,6 +40,77 @@ export default function HomePage() {
   const featureScrollRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const { user } = useSupabase();
+  
+  // Stats state
+  const [stats, setStats] = useState<PlatformStats>({
+    activeUsers: 0,
+    monthlyGrowth: 40,
+    models: 0,
+    countries: 0,
+    apiCalls: 0
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Function to fetch platform stats with retry logic
+  const fetchPlatformStats = useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      setStatsError(null);
+      console.log("🔄 Fetching platform stats...");
+      
+      const response = await fetch('/api/platform-stats');
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to fetch platform stats:', response.status, errorText);
+        setStatsError(`Error ${response.status}: ${errorText}`);
+        
+        // Retry logic - retry up to 3 times with increasing delay
+        if (retryCount < 3) {
+          const retryDelay = 1000 * Math.pow(2, retryCount); // Exponential backoff
+          console.log(`⏱️ Retrying in ${retryDelay/1000}s... (Attempt ${retryCount + 1}/3)`);
+          
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+            fetchPlatformStats();
+          }, retryDelay);
+        }
+        return;
+      }
+
+      const data = await response.json();
+      console.log("✅ Received platform stats:", data);
+      
+      // Validate data to ensure we don't display empty stats
+      const validatedData = {
+        ...data,
+        activeUsers: data.activeUsers || 0,
+        models: data.models || 0,
+        countries: data.countries || 0,
+        apiCalls: data.apiCalls || 0,
+        monthlyGrowth: data.monthlyGrowth || 40
+      };
+      
+      setStats(validatedData);
+      setRetryCount(0); // Reset retry count on success
+    } catch (error) {
+      console.error('Error fetching platform stats:', error);
+      setStatsError(error instanceof Error ? error.message : 'Unknown error');
+      
+      // Same retry logic for unexpected errors
+      if (retryCount < 3) {
+        const retryDelay = 1000 * Math.pow(2, retryCount);
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          fetchPlatformStats();
+        }, retryDelay);
+      }
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [retryCount]);
 
   // Hide splash screen after it completes
   useEffect(() => {
@@ -51,6 +132,26 @@ export default function HomePage() {
       return () => clearTimeout(timer);
     }
   }, [loading]);
+  
+  // Fetch platform stats on component mount
+  useEffect(() => {
+    fetchPlatformStats();
+    
+    // Refresh stats every 10 seconds
+    const intervalId = setInterval(fetchPlatformStats, 10000);
+    
+    return () => clearInterval(intervalId);
+  }, [fetchPlatformStats]);
+
+  // Format numbers for display
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M+`;
+    } else if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K+`;
+    }
+    return `${num}+`;
+  };
 
   // Horizontal scroll for features
   const handleScrollFeatures = (direction: 'left' | 'right') => {
@@ -218,16 +319,37 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.6 }}
             >
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
-                <div className="text-3xl font-bold text-cyan-400 mb-2">50K+</div>
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50 relative overflow-hidden">
+                {statsLoading && (
+                  <div className="absolute inset-0 bg-gray-800/70 backdrop-blur-sm flex items-center justify-center">
+                    <div className="h-5 w-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+                <div className="text-3xl font-bold text-cyan-400 mb-2">
+                  {formatNumber(stats.activeUsers)}
+                </div>
                 <div className="text-gray-300">Active Users</div>
               </div>
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
-                <div className="text-3xl font-bold text-blue-400 mb-2">100M+</div>
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50 relative overflow-hidden">
+                {statsLoading && (
+                  <div className="absolute inset-0 bg-gray-800/70 backdrop-blur-sm flex items-center justify-center">
+                    <div className="h-5 w-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+                <div className="text-3xl font-bold text-blue-400 mb-2">
+                  {formatNumber(stats.apiCalls)}
+                </div>
                 <div className="text-gray-300">API Requests</div>
               </div>
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
-                <div className="text-3xl font-bold text-purple-400 mb-2">10K+</div>
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50 relative overflow-hidden">
+                {statsLoading && (
+                  <div className="absolute inset-0 bg-gray-800/70 backdrop-blur-sm flex items-center justify-center">
+                    <div className="h-5 w-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+                <div className="text-3xl font-bold text-purple-400 mb-2">
+                  {formatNumber(stats.models)}
+                </div>
                 <div className="text-gray-300">Models Hosted</div>
               </div>
             </motion.div>

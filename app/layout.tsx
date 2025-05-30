@@ -13,6 +13,14 @@ import { AdminAuthProvider } from "@/providers/AdminAuthProvider";
 // Remove the font initialization
 // const inter = Inter({ subsets: ["latin"] });
 
+// Add webpack chunk loading timeout directive - fixes chunk timeout issues
+// @ts-ignore
+// eslint-disable-next-line
+if (typeof window !== 'undefined') {
+  // @ts-ignore
+  window.__NEXT_CHUNK_LOAD_TIMEOUT__ = 120000; // 2 minutes timeout
+}
+
 // Metadata can be exported from a Server Component
 export const metadata: Metadata = {
   title: 'Neural Nexus - The AI Community Hub',
