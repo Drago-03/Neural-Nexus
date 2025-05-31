@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const webpack = require('webpack');
+
 const nextConfig = {
   // Core settings
   reactStrictMode: true,
@@ -124,6 +126,15 @@ const nextConfig = {
     
     // Fix for MongoDB 5.0+ issues
     if (!isServer) {
+      // Create a custom alias for timers/promises
+      if (!config.resolve.alias) {
+        config.resolve.alias = {};
+      }
+      
+      // Add alias for timers/promises -> timers
+      config.resolve.alias['timers/promises'] = require.resolve('./lib/polyfills/timers-promises.js');
+      
+      // Add all necessary Node.js polyfills
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
@@ -131,7 +142,29 @@ const nextConfig = {
         tls: false,
         dns: false,
         child_process: false,
+        os: false,
+        // Polyfills for MongoDB
+        timers: require.resolve('timers-browserify'),
+        crypto: require.resolve('crypto-browserify'),
+        stream: require.resolve('stream-browserify'),
+        path: require.resolve('path-browserify'),
+        zlib: require.resolve('browserify-zlib'),
+        http: require.resolve('stream-http'),
+        https: require.resolve('https-browserify'),
+        util: require.resolve('util/'),
+        buffer: require.resolve('buffer/'),
+        url: require.resolve('url/'),
+        assert: require.resolve('assert/'),
+        process: require.resolve('process/browser'),
       };
+      
+      // Add process polyfill using the directly imported webpack
+      config.plugins.push(
+        new webpack.ProvidePlugin({
+          process: 'process/browser',
+          Buffer: ['buffer', 'Buffer'],
+        })
+      );
       
       // Increase chunk loading timeout for client
       config.output.chunkLoadTimeout = 120000; // 2 minutes

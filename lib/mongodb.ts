@@ -132,7 +132,8 @@ export async function connectToDatabase(): Promise<ConnectionProps> {
 export async function getCollection<T extends Document = Document>(collectionName: string): Promise<Collection<T>> {
   try {
     const { db } = await connectToDatabase();
-    return db.collection<T>(collectionName);
+    // Cast to any to avoid type errors with MongoDB operators
+    return db.collection(collectionName) as unknown as Collection<T>;
   } catch (error) {
     console.error(`Error getting collection ${collectionName}:`, error);
     // Return a mock collection that won't break builds

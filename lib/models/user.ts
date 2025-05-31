@@ -232,9 +232,10 @@ export class UserService {
     skills?: string[];
     interests?: string[];
   }): Promise<boolean> {
-    const collection = await getCollection(this.COLLECTION_NAME);
-    
     try {
+      console.log(`UserService.completeProfile: Starting profile update for user ${id}`);
+      const collection = await getCollection(this.COLLECTION_NAME);
+      
       // Create a sanitized update object with only defined values
       const updateFields: any = {
         name: profileData.displayName || '',
@@ -254,13 +255,36 @@ export class UserService {
       if (Array.isArray(profileData.skills)) updateFields.skills = profileData.skills;
       if (Array.isArray(profileData.interests)) updateFields.interests = profileData.interests;
       
-      // Update user profile with provided data
-      const result = await collection.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: updateFields }
-      );
+      console.log(`UserService.completeProfile: Update fields:`, JSON.stringify(updateFields));
       
-      return result.modifiedCount > 0;
+      try {
+        // Check if user exists first
+        const userId = new ObjectId(id);
+        const userExists = await collection.findOne({ _id: userId });
+        
+        if (!userExists) {
+          console.error(`UserService.completeProfile: User with ID ${id} not found`);
+          return false;
+        }
+        
+        // Update user profile with provided data
+        const result = await collection.updateOne(
+          { _id: userId },
+          { $set: updateFields }
+        );
+        
+        console.log(`UserService.completeProfile: Update result:`, JSON.stringify({
+          matchedCount: result.matchedCount,
+          modifiedCount: result.modifiedCount,
+          acknowledged: result.acknowledged
+        }));
+        
+        // Return true even if no documents were modified, as long as the query matched a document
+        return result.matchedCount > 0;
+      } catch (dbError) {
+        console.error(`UserService.completeProfile: Database error:`, dbError);
+        throw dbError;
+      }
     } catch (error) {
       console.error('Error completing profile:', error);
       return false;
@@ -424,18 +448,18 @@ export class UserService {
       followedAt: new Date()
     };
     
-    // Update both users
+    // Update both users - use type assertion to work around type issues
     await Promise.all([
       // Add target user to current user's following list
       collection.updateOne(
         { _id: new ObjectId(userId) },
-        { $push: { following: followingObj } }
+        { $push: { following: followingObj } } as any
       ),
       
       // Add current user to target user's followers list
       collection.updateOne(
         { _id: new ObjectId(targetUserId) },
-        { $push: { followers: followerObj } }
+        { $push: { followers: followerObj } } as any
       )
     ]);
     
@@ -448,18 +472,18 @@ export class UserService {
   static async unfollowUser(userId: string, targetUserId: string): Promise<boolean> {
     const collection = await getCollection(this.COLLECTION_NAME);
     
-    // Update both users
+    // Update both users - use type assertion to work around type issues
     await Promise.all([
       // Remove target user from current user's following list
       collection.updateOne(
         { _id: new ObjectId(userId) },
-        { $pull: { following: { userId: targetUserId } } }
+        { $pull: { following: { userId: targetUserId } } } as any
       ),
       
       // Remove current user from target user's followers list
       collection.updateOne(
         { _id: new ObjectId(targetUserId) },
-        { $pull: { followers: { userId: userId } } }
+        { $pull: { followers: { userId: userId } } } as any
       )
     ]);
     
@@ -467,23 +491,23 @@ export class UserService {
   }
 
   /**
-   * Save/unsave a post
+   * Toggle saving a post
    */
   static async toggleSavePost(userId: string, postId: string, save: boolean): Promise<boolean> {
     const collection = await getCollection(this.COLLECTION_NAME);
     
     try {
       if (save) {
-        // Save the post
+        // Add to saved posts
         await collection.updateOne(
           { _id: new ObjectId(userId) },
           { $addToSet: { savedPosts: postId } }
         );
       } else {
-        // Unsave the post
+        // Remove from saved posts - use type assertion to work around type issues
         await collection.updateOne(
           { _id: new ObjectId(userId) },
-          { $pull: { savedPosts: postId } }
+          { $pull: { savedPosts: postId } } as any
         );
       }
       

@@ -92,7 +92,8 @@ export default function ProfileCompleteModal({
       setStep(step + 1);
     } else {
       // Submit profile data to the API
-      saveProfileData(profileData);
+      const success = saveProfileData(profileData);
+      // onClose will be called by onComplete callback if successful
     }
   };
   
@@ -125,22 +126,34 @@ export default function ProfileCompleteModal({
       });
       
       // Get the response data regardless of status
-      const result = await response.json();
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        console.error("Error parsing response:", parseError);
+        throw new Error('Server returned an invalid response');
+      }
       
       if (!response.ok) {
         console.error("Profile save error:", result);
-        throw new Error(result.error || 'Failed to save profile data');
+        throw new Error(result.error || `Failed to save profile data (${response.status})`);
       }
       
       console.log("Profile save success:", result);
       
       // Call the onComplete callback with the updated user data
-      onComplete(result.user);
+      onComplete(result.user || sanitizedData);
     } catch (error: any) {
       console.error('Error saving profile data:', error);
       // Show specific error message if available
-      alert(error.message || 'Failed to save profile data. Please try again.');
+      const errorMessage = error.message || 'Failed to save profile data. Please try again.';
+      alert(`Profile update error: ${errorMessage}`);
+      
+      // Don't close modal - let user try again
+      return false;
     }
+    
+    return true;
   };
   
   const handlePrev = () => {
@@ -175,18 +188,29 @@ export default function ProfileCompleteModal({
       const formData = new FormData();
       formData.append('avatar', file);
       
+      console.log("Uploading avatar file:", file.name, "Type:", file.type, "Size:", file.size);
+      
       // Upload image
       const response = await fetch('/api/user/avatar', {
         method: 'POST',
         body: formData,
+        credentials: 'include' // Add credentials to ensure cookies are sent
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to upload image');
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        console.error("Error parsing avatar response:", parseError);
+        throw new Error('Server returned an invalid response');
       }
       
-      const result = await response.json();
+      if (!response.ok) {
+        console.error("Avatar upload error:", result);
+        throw new Error(result.error || `Failed to upload image (${response.status})`);
+      }
+      
+      console.log("Avatar upload success:", result);
       
       // Update profile data with new avatar URL
       setProfileData(prev => ({
@@ -194,9 +218,17 @@ export default function ProfileCompleteModal({
         profilePicture: result.avatar
       }));
       
-    } catch (error) {
+      // Success feedback - using less intrusive method
+      console.log('Profile picture uploaded successfully!');
+      
+    } catch (error: any) {
       console.error('Error uploading image:', error);
-      alert('Failed to upload image. Please try again.');
+      alert(`Avatar upload error: ${error.message || 'Failed to upload image. Please try again.'}`);
+      
+      // Reset file input so user can retry with same file
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } finally {
       setIsUploading(false);
     }

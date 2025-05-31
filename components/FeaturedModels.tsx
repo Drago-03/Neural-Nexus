@@ -1,94 +1,19 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ModelCard } from './ModelCard';
 import { AnimatedCard } from './ui/animated-card';
 import { AnimatedButton } from './ui/animated-button';
-
-// Mock data for featured models
-const mockModels = [
-  {
-    id: "model-1",
-    name: "NeuraChatGPT",
-    description: "Advanced conversational AI with superior context understanding and multi-turn dialogue capabilities.",
-    author: "NexusCoder",
-    price: 25,
-    cryptoPrice: { amount: 0.01, currency: "ETH" },
-    isNFTBacked: true,
-    rating: 4.8,
-    downloads: 12500,
-    tags: ["Conversational", "GPT", "Assistant"],
-    imageUrl: "https://images.unsplash.com/photo-1677442135136-760c813a743d"
-  },
-  {
-    id: "model-2",
-    name: "PixelMaster",
-    description: "State-of-the-art image generation model with unmatched detail and prompt accuracy.",
-    author: "AIArtistry",
-    price: 50,
-    cryptoPrice: { amount: 0.02, currency: "ETH" },
-    ipfsHash: "Qm...",
-    rating: 4.9,
-    downloads: 8700,
-    tags: ["Image", "Creative", "Generation"],
-    imageUrl: "https://images.unsplash.com/photo-1686191482311-cb3fa868a543"
-  },
-  {
-    id: "model-3",
-    name: "CodeAssist Pro",
-    description: "Code completion and generation model fine-tuned on the latest programming languages.",
-    author: "DevGenius",
-    price: 35,
-    cryptoPrice: { amount: 20, currency: "MATIC" },
-    isNFTBacked: true,
-    ipfsHash: "Qm...",
-    rating: 4.7,
-    downloads: 15600,
-    tags: ["Coding", "Completion", "Developer"],
-    imageUrl: "https://images.unsplash.com/photo-1650368559427-db0fe948a228"
-  },
-  {
-    id: "model-4",
-    name: "VideoGenie",
-    description: "Generate and edit video content through simple text prompts with impressive frame consistency.",
-    author: "MediaMage",
-    price: 75,
-    rating: 4.6,
-    downloads: 5300,
-    tags: ["Video", "Creator", "Editing"],
-    imageUrl: "https://images.unsplash.com/photo-1616865582588-558a4b32da0c"
-  },
-  {
-    id: "model-5",
-    name: "LegalAssistant",
-    description: "Specialized model for legal document analysis, contract review, and legal research assistance.",
-    author: "LawTech",
-    price: 45,
-    cryptoPrice: { amount: 45, currency: "USDT" },
-    rating: 4.5,
-    downloads: 3200,
-    tags: ["Legal", "Analysis", "Professional"],
-    imageUrl: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f"
-  },
-  {
-    id: "model-6",
-    name: "SynthWave",
-    description: "Audio generation model capable of creating music, sounds, and voice in multiple styles.",
-    author: "AudioAlchemy",
-    price: 30,
-    isNFTBacked: true,
-    rating: 4.7,
-    downloads: 9800,
-    tags: ["Audio", "Music", "Voice"],
-    imageUrl: "https://images.unsplash.com/photo-1511379938547-c1f69419868d"
-  }
-];
+import { ModelService, AIModel } from '@/lib/models/model';
+import Link from 'next/link';
 
 export function FeaturedModels() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [viewingModel, setViewingModel] = useState<string | null>(null);
+  const [models, setModels] = useState<AIModel[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Categories for filtering
   const categories = [
@@ -100,8 +25,27 @@ export function FeaturedModels() {
     { id: "video", name: "Video" },
   ];
   
+  // Fetch featured models from the database
+  useEffect(() => {
+    const fetchModels = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch featured models (limit to 6)
+        const fetchedModels = await ModelService.getFeaturedModels(6);
+        setModels(fetchedModels || []);
+      } catch (error) {
+        console.error('Error fetching featured models:', error);
+        setModels([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchModels();
+  }, []);
+
   // Filter models based on category and search query
-  const filteredModels = mockModels.filter(model => {
+  const filteredModels = models.filter(model => {
     // Filter by category
     if (activeCategory !== "all") {
       const modelTags = model.tags.map(tag => tag.toLowerCase());
@@ -116,7 +60,7 @@ export function FeaturedModels() {
       return (
         model.name.toLowerCase().includes(query) ||
         model.description.toLowerCase().includes(query) ||
-        model.author.toLowerCase().includes(query) ||
+        model.creator.name.toLowerCase().includes(query) ||
         model.tags.some(tag => tag.toLowerCase().includes(query))
       );
     }
@@ -126,13 +70,28 @@ export function FeaturedModels() {
 
   const handleViewModel = (id: string) => {
     setViewingModel(id);
-    // In a real app, you'd navigate to the model page
-    console.log(`Viewing model ${id}`);
+    // Navigate to model detail page
+    window.location.href = `/models/${id}`;
   };
 
   const handlePurchaseModel = (id: string) => {
-    // In a real app, you'd open a purchase modal or navigate to checkout
-    console.log(`Purchasing model ${id}`);
+    // Navigate to checkout page
+    window.location.href = `/checkout?model=${id}`;
+  };
+  
+  // Render placeholders during loading
+  const renderPlaceholderCards = (count: number) => {
+    return Array(count).fill(0).map((_, index) => (
+      <div key={`placeholder-${index}`} className="bg-gray-800/30 rounded-xl h-[350px] animate-pulse">
+        <div className="h-48 bg-gray-700/50 rounded-t-xl"></div>
+        <div className="p-4">
+          <div className="h-6 bg-gray-700/50 rounded w-3/4 mb-2"></div>
+          <div className="h-4 bg-gray-700/50 rounded w-1/2 mb-4"></div>
+          <div className="h-4 bg-gray-700/50 rounded w-full mb-2"></div>
+          <div className="h-4 bg-gray-700/50 rounded w-5/6"></div>
+        </div>
+      </div>
+    ));
   };
   
   return (
@@ -183,28 +142,31 @@ export function FeaturedModels() {
         </div>
         
         {/* Model grid */}
-        {filteredModels.length > 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {renderPlaceholderCards(6)}
+          </div>
+        ) : filteredModels.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredModels.map((model) => (
               <motion.div
-                key={model.id}
+                key={model._id?.toString()}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
                 <ModelCard
-                  id={model.id}
+                  id={model._id?.toString() || ''}
                   name={model.name}
                   description={model.description}
-                  author={model.author}
-                  price={model.price}
-                  cryptoPrice={model.cryptoPrice}
-                  isNFTBacked={model.isNFTBacked}
-                  ipfsHash={model.ipfsHash}
-                  rating={model.rating}
+                  author={model.creator.name}
+                  // Note: In a real app, you would add price data to your model schema
+                  price={0}
+                  rating={model.averageRating || 0}
                   downloads={model.downloads}
                   tags={model.tags}
-                  imageUrl={model.imageUrl}
+                  // Use a placeholder image if the model doesn't have one
+                  imageUrl={"/placeholder-model.jpg"}
                   onView={handleViewModel}
                   onPurchase={handlePurchaseModel}
                 />
@@ -212,33 +174,45 @@ export function FeaturedModels() {
             ))}
           </div>
         ) : (
-          <AnimatedCard variant="glass" className="p-8 text-center">
+          <AnimatedCard className="p-8 text-center">
             <h3 className="text-xl font-bold mb-2">No models found</h3>
             <p className="text-gray-400 mb-4">
-              Try adjusting your search or filter criteria
+              {searchQuery ? 
+                "No models match your search query. Try different keywords." : 
+                "There are no featured models yet."}
             </p>
-            <AnimatedButton
-              variant="outline"
-              onClick={() => {
-                setSearchQuery("");
-                setActiveCategory("all");
-              }}
-            >
-              Reset Filters
-            </AnimatedButton>
+            <div className="flex justify-center gap-4">
+              {searchQuery && (
+                <AnimatedButton
+                  variant="outline"
+                  onClick={() => setSearchQuery("")}
+                >
+                  Clear Search
+                </AnimatedButton>
+              )}
+              <Link href="/marketplace">
+                <AnimatedButton variant="primary">
+                  Browse All Models
+                </AnimatedButton>
+              </Link>
+            </div>
           </AnimatedCard>
         )}
         
         {/* View all button */}
-        <div className="mt-10 text-center">
-          <AnimatedButton
-            variant="secondary"
-            size="lg"
-            className="px-8"
-          >
-            View All Models
-          </AnimatedButton>
-        </div>
+        {filteredModels.length > 0 && (
+          <div className="mt-10 text-center">
+            <Link href="/marketplace">
+              <AnimatedButton
+                variant="secondary"
+                size="lg"
+                className="px-8"
+              >
+                View All Models
+              </AnimatedButton>
+            </Link>
+          </div>
+        )}
       </motion.div>
     </section>
   );

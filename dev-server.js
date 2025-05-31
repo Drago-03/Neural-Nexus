@@ -8,6 +8,37 @@ const path = require('path');
 const app = next({ dev: false });
 const handle = app.getRequestHandler();
 
+// Ensure upload directories exist
+function ensureUploadDirectories() {
+  const uploadDirs = [
+    path.join(process.cwd(), 'public', 'uploads'),
+    path.join(process.cwd(), 'public', 'uploads', 'avatars'),
+    path.join(process.cwd(), 'public', 'uploads', 'models'),
+    path.join(process.cwd(), 'public', 'uploads', 'temp')
+  ];
+  
+  console.log('Ensuring upload directories exist...');
+  
+  for (const dir of uploadDirs) {
+    if (!fs.existsSync(dir)) {
+      console.log(`Creating directory: ${dir}`);
+      fs.mkdirSync(dir, { recursive: true });
+    } else {
+      console.log(`Directory already exists: ${dir}`);
+    }
+    
+    // Make sure directory is writable
+    try {
+      fs.accessSync(dir, fs.constants.W_OK);
+      console.log(`Directory is writable: ${dir}`);
+    } catch (error) {
+      console.error(`Directory is not writable: ${dir}`, error);
+    }
+  }
+  
+  console.log('All upload directories verified');
+}
+
 // Paths that require static file handling
 const staticPaths = {
   '/signin': '/public/signin-static.html',
@@ -76,6 +107,9 @@ const defaultFallback = `
 
 // Start the app
 app.prepare().then(() => {
+  // Create upload directories before starting server
+  ensureUploadDirectories();
+  
   createServer((req, res) => {
     // Set headers for middleware to identify special handling
     req.headers['x-is-build'] = 'true';
@@ -117,6 +151,7 @@ app.prepare().then(() => {
     
     console.log('\n🚀 Server running at http://localhost:3000');
     console.log('✅ Auth pages using static HTML fallbacks');
+    console.log('✅ Upload directories verified and ready');
   });
 }).catch(err => {
   console.error('Error preparing Next.js app:', err);

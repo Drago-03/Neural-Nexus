@@ -24,7 +24,7 @@ import AnimatedLogo from "@/components/AnimatedLogo";
 
 // Platform stats interface
 interface PlatformStats {
-  activeUsers: number;
+  activeUsers: number;  // Total registered users count
   monthlyGrowth: number;
   models: number;
   countries: number;
@@ -282,7 +282,7 @@ export default function AboutPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <div className="bg-gradient-to-br from-purple-900/40 to-purple-600/20 rounded-xl p-6 border border-purple-500/30">
-              <h3 className="text-sm uppercase tracking-wider text-purple-400 mb-1">Active Users</h3>
+              <h3 className="text-sm uppercase tracking-wider text-purple-400 mb-1">Registered Users</h3>
               <div className="text-4xl font-bold mb-1">
                 {loading ? (
                   <div className="h-10 w-24 bg-purple-800/50 animate-pulse rounded"></div>
@@ -366,7 +366,7 @@ export default function AboutPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="h-3 w-3 bg-blue-500 rounded-full"></span>
-                  <span className="font-medium">{formatNumber(stats.activeUsers)} Creators</span>
+                  <span className="font-medium">{formatNumber(stats.activeUsers)} Users</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="h-3 w-3 bg-pink-500 rounded-full"></span>
@@ -403,7 +403,7 @@ export default function AboutPage() {
               
               {/* Floating cards */}
               <div className="absolute -top-6 -left-6 bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg border border-gray-700/50 shadow-xl max-w-[180px]">
-                <div className="text-sm font-medium mb-1">Active Users</div>
+                <div className="text-sm font-medium mb-1">Registered Users</div>
                 <div className="text-2xl font-bold text-purple-400">
                   {loading ? (
                     <div className="h-7 w-16 bg-purple-800/50 animate-pulse rounded"></div>

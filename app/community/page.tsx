@@ -449,13 +449,13 @@ export default function CommunityPage() {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 mt-8">
             <Link
-              href={user ? "/dashboard/models" : "/signup?redirect=creator"}
+              href={user ? "/your-models" : "/signup?redirect=creator"}
               className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg font-medium hover:opacity-90 transition-opacity flex-1 text-center"
             >
               Become a Creator
             </Link>
             <Link
-              href={user ? "/dashboard/models/upload" : "/signup?redirect=upload"}
+              href={user ? "/your-models" : "/signup?redirect=upload"}
               className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors flex-1 text-center"
             >
               Submit a Model
@@ -613,7 +613,7 @@ export default function CommunityPage() {
                   <h3 className="text-xl font-bold mb-3">No Creators Found</h3>
                   <p className="text-gray-400 mb-6">There are no featured creators available at the moment.</p>
                   <Link
-                    href={user ? "/dashboard/models" : "/signup?redirect=creator"}
+                    href={user ? "/your-models" : "/signup?redirect=creator"}
                     className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors"
                   >
                     Become a Creator
@@ -700,7 +700,7 @@ export default function CommunityPage() {
                   <h3 className="text-xl font-bold mb-3">No Models Found</h3>
                   <p className="text-gray-400 mb-6">There are no trending models available at the moment.</p>
                   <Link
-                    href={user ? "/dashboard/models/upload" : "/signup?redirect=upload"}
+                    href={user ? "/your-models" : "/signup?redirect=upload"}
                     className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors"
                   >
                     Submit a Model

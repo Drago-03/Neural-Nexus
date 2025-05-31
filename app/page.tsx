@@ -24,7 +24,7 @@ import { useSupabase } from '@/providers/SupabaseProvider';
 
 // Platform stats interface
 interface PlatformStats {
-  activeUsers: number;
+  activeUsers: number;  // Total registered users count
   monthlyGrowth: number;
   models: number;
   countries: number;
@@ -328,7 +328,7 @@ export default function HomePage() {
                 <div className="text-3xl font-bold text-cyan-400 mb-2">
                   {formatNumber(stats.activeUsers)}
                 </div>
-                <div className="text-gray-300">Active Users</div>
+                <div className="text-gray-300">Registered Users</div>
               </div>
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50 relative overflow-hidden">
                 {statsLoading && (

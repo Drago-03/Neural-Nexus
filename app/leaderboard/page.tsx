@@ -44,7 +44,7 @@ function LeaderboardContent() {
               <p className="text-3xl font-bold text-purple-400">145.2 ETH</p>
             </div>
             <div className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 backdrop-blur-sm rounded-xl p-6 border border-blue-500/20">
-              <h3 className="text-xl font-semibold mb-1">Active Users</h3>
+              <h3 className="text-xl font-semibold mb-1">Registered Users</h3>
               <p className="text-3xl font-bold text-blue-400">2,451</p>
             </div>
             <div className="bg-gradient-to-br from-pink-900/30 to-red-900/30 backdrop-blur-sm rounded-xl p-6 border border-pink-500/20">

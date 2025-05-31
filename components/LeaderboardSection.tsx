@@ -28,6 +28,8 @@ export default function LeaderboardSection() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [filterActive, setFilterActive] = useState(false);
   const [showMoreUsers, setShowMoreUsers] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Only access the Web3Provider when component is mounted
   const web3Context = mounted ? useWeb3() : { 
@@ -43,84 +45,38 @@ export default function LeaderboardSection() {
     setMounted(true);
   }, []);
   
-  // Mock data for the leaderboard
-  const mockLeaderboard: LeaderboardUser[] = [
-    {
-      id: '1',
-      username: 'NeuralWizard',
-      avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop',
-      cryptoEarned: 3.45,
-      modelsSold: 12,
-      contributions: 24,
-      testingFeedback: 37,
-      badges: ['Open Source Contributor', 'Verified Developer'],
-      walletAddress: '0x1234...5678',
-      joinedDate: '2023-05-12'
-    },
-    {
-      id: '2',
-      username: 'AIQueen',
-      avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&auto=format&fit=crop',
-      cryptoEarned: 5.21,
-      modelsSold: 8,
-      contributions: 15,
-      testingFeedback: 42,
-      badges: ['Beta Model Tester', 'Top Seller'],
-      walletAddress: '0xabcd...efgh',
-      joinedDate: '2023-06-23'
-    },
-    {
-      id: '3',
-      username: 'DataDriven',
-      avatarUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100&auto=format&fit=crop',
-      cryptoEarned: 2.87,
-      modelsSold: 5,
-      contributions: 31,
-      testingFeedback: 19,
-      badges: ['Open Source Contributor'],
-      walletAddress: '0x7890...1234',
-      joinedDate: '2023-04-05'
-    },
-    {
-      id: '4',
-      username: 'CodeMaster',
-      avatarUrl: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&auto=format&fit=crop',
-      cryptoEarned: 1.95,
-      modelsSold: 3,
-      contributions: 47,
-      testingFeedback: 8,
-      badges: ['Verified Developer', 'Bug Hunter'],
-      walletAddress: '0xdefg...hijk',
-      joinedDate: '2023-03-18'
-    },
-    {
-      id: '5',
-      username: 'NeuralNinja',
-      avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop',
-      cryptoEarned: 4.12,
-      modelsSold: 9,
-      contributions: 12,
-      testingFeedback: 24,
-      badges: ['Beta Model Tester', 'Top Seller'],
-      walletAddress: '0xlmno...pqrs',
-      joinedDate: '2023-07-30'
-    },
-    {
-      id: '6',
-      username: 'DeepMindz',
-      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop',
-      cryptoEarned: 3.05,
-      modelsSold: 7,
-      contributions: 18,
-      testingFeedback: 29,
-      badges: ['Open Source Contributor'],
-      walletAddress: '0xtuv...wxyz',
-      joinedDate: '2023-02-14'
+  // Fetch leaderboard data from API
+  useEffect(() => {
+    const fetchLeaderboardData = async () => {
+      setIsLoading(true);
+      try {
+        // This would be a real API call in production
+        // For now, we'll simulate an API response with an empty array
+        // In the future, this would be replaced with a real API call:
+        // const response = await fetch('/api/leaderboard');
+        // const data = await response.json();
+        
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Return empty array - no dummy data
+        const data: LeaderboardUser[] = [];
+        setLeaderboardData(data);
+      } catch (error) {
+        console.error('Error fetching leaderboard data:', error);
+        setLeaderboardData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    if (mounted) {
+      fetchLeaderboardData();
     }
-  ];
+  }, [mounted]);
   
   // Filter and sort the leaderboard data
-  const sortedLeaderboard = [...mockLeaderboard]
+  const sortedLeaderboard = [...leaderboardData]
     .sort((a, b) => {
       const aValue = a[sortBy];
       const bValue = b[sortBy];
@@ -169,6 +125,32 @@ export default function LeaderboardSection() {
     };
     
     return badgeColors[badge] || 'bg-gray-900/40 border-gray-500/30 text-gray-400';
+  };
+  
+  // Render placeholder cards during loading
+  const renderPlaceholderCards = (count: number) => {
+    return Array(count).fill(0).map((_, index) => (
+      <div key={`placeholder-${index}`} className="bg-gray-800/30 rounded-xl h-[300px] animate-pulse">
+        <div className="p-6">
+          <div className="flex items-center mb-4">
+            <div className="w-12 h-12 rounded-full bg-gray-700/50"></div>
+            <div className="ml-3">
+              <div className="h-4 bg-gray-700/50 rounded w-24 mb-2"></div>
+              <div className="h-3 bg-gray-700/50 rounded w-32"></div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-gray-700/30 rounded-lg p-2">
+                <div className="h-3 bg-gray-700/50 rounded w-20 mb-2"></div>
+                <div className="h-5 bg-gray-700/50 rounded w-10"></div>
+              </div>
+            ))}
+          </div>
+          <div className="h-4 bg-gray-700/50 rounded w-full mt-4"></div>
+        </div>
+      </div>
+    ));
   };
   
   // If not mounted yet (server rendering), show a placeholder
@@ -254,91 +236,110 @@ export default function LeaderboardSection() {
         )}
         
         {/* Leaderboard grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayedUsers.map((user, index) => (
-            <motion.div
-              key={user.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <AnimatedCard hoverEffect="lift" className="h-full">
-                <div className="p-6">
-                  {/* User header */}
-                  <div className="flex items-center mb-4">
-                    <div className="relative">
-                      <img 
-                        src={user.avatarUrl} 
-                        alt={user.username}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-purple-500"
-                      />
-                      {index < 3 && (
-                        <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                          index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-300' : 'bg-amber-700'
-                        }`}>
-                          {index + 1}
-                        </div>
-                      )}
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="font-bold">{user.username}</h3>
-                      <p className="text-xs text-gray-400">Joined {new Date(user.joinedDate).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Stats grid */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="bg-gray-800/50 rounded-lg p-2">
-                      <div className="flex items-center text-xs text-gray-400 mb-1">
-                        <Trophy className="w-3 h-3 mr-1" /> Models Sold
-                      </div>
-                      <p className="text-lg font-bold">{user.modelsSold}</p>
-                    </div>
-                    <div className="bg-gray-800/50 rounded-lg p-2">
-                      <div className="flex items-center text-xs text-gray-400 mb-1">
-                        <DollarSign className="w-3 h-3 mr-1" /> Earned
-                      </div>
-                      <p className="text-lg font-bold">
-                        {showCryptoEarnings ? `${user.cryptoEarned} ETH` : '***'}
-                      </p>
-                    </div>
-                    <div className="bg-gray-800/50 rounded-lg p-2">
-                      <div className="flex items-center text-xs text-gray-400 mb-1">
-                        <GitBranch className="w-3 h-3 mr-1" /> Contributions
-                      </div>
-                      <p className="text-lg font-bold">{user.contributions}</p>
-                    </div>
-                    <div className="bg-gray-800/50 rounded-lg p-2">
-                      <div className="flex items-center text-xs text-gray-400 mb-1">
-                        <Eye className="w-3 h-3 mr-1" /> Test Feedback
-                      </div>
-                      <p className="text-lg font-bold">{user.testingFeedback}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Badges */}
-                  {user.badges.length > 0 && (
-                    <div className="mb-3">
-                      <h4 className="text-xs text-gray-400 mb-2">Web3 Badges</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {user.badges.map((badge, i) => (
-                          <div key={i} className={`text-xs px-2 py-1 rounded-full border ${getBadgeColor(badge)}`}>
-                            {badge}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {renderPlaceholderCards(3)}
+          </div>
+        ) : displayedUsers.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayedUsers.map((user, index) => (
+              <motion.div
+                key={user.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <AnimatedCard hoverEffect="lift" className="h-full">
+                  <div className="p-6">
+                    {/* User header */}
+                    <div className="flex items-center mb-4">
+                      <div className="relative">
+                        <img 
+                          src={user.avatarUrl} 
+                          alt={user.username}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-purple-500"
+                        />
+                        {index < 3 && (
+                          <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-300' : 'bg-amber-700'
+                          }`}>
+                            {index + 1}
                           </div>
-                        ))}
+                        )}
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="font-bold">{user.username}</h3>
+                        <p className="text-xs text-gray-400">Joined {new Date(user.joinedDate).toLocaleDateString()}</p>
                       </div>
                     </div>
-                  )}
-                  
-                  {/* Wallet address truncated */}
-                  <div className="text-xs text-gray-500 font-mono mt-2 flex items-center">
-                    <span className="mr-1">Wallet:</span> {user.walletAddress}
+                    
+                    {/* Stats grid */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-gray-800/50 rounded-lg p-2">
+                        <div className="flex items-center text-xs text-gray-400 mb-1">
+                          <Trophy className="w-3 h-3 mr-1" /> Models Sold
+                        </div>
+                        <p className="text-lg font-bold">{user.modelsSold}</p>
+                      </div>
+                      <div className="bg-gray-800/50 rounded-lg p-2">
+                        <div className="flex items-center text-xs text-gray-400 mb-1">
+                          <DollarSign className="w-3 h-3 mr-1" /> Earned
+                        </div>
+                        <p className="text-lg font-bold">
+                          {showCryptoEarnings ? `${user.cryptoEarned} ETH` : '***'}
+                        </p>
+                      </div>
+                      <div className="bg-gray-800/50 rounded-lg p-2">
+                        <div className="flex items-center text-xs text-gray-400 mb-1">
+                          <GitBranch className="w-3 h-3 mr-1" /> Contributions
+                        </div>
+                        <p className="text-lg font-bold">{user.contributions}</p>
+                      </div>
+                      <div className="bg-gray-800/50 rounded-lg p-2">
+                        <div className="flex items-center text-xs text-gray-400 mb-1">
+                          <Eye className="w-3 h-3 mr-1" /> Test Feedback
+                        </div>
+                        <p className="text-lg font-bold">{user.testingFeedback}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Badges */}
+                    {user.badges.length > 0 && (
+                      <div className="mb-3">
+                        <h4 className="text-xs text-gray-400 mb-2">Web3 Badges</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {user.badges.map((badge, i) => (
+                            <div key={i} className={`text-xs px-2 py-1 rounded-full border ${getBadgeColor(badge)}`}>
+                              {badge}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Wallet address truncated */}
+                    <div className="text-xs text-gray-500 font-mono mt-2 flex items-center">
+                      <span className="mr-1">Wallet:</span> {user.walletAddress}
+                    </div>
                   </div>
-                </div>
-              </AnimatedCard>
-            </motion.div>
-          ))}
-        </div>
+                </AnimatedCard>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <AnimatedCard className="p-8 text-center">
+            <h3 className="text-xl font-bold mb-4">No Leaderboard Data Yet</h3>
+            <p className="text-gray-400 mb-6">
+              Be the first to contribute to the platform and earn your spot on the leaderboard!
+            </p>
+            <AnimatedButton variant="primary" size="lg" onClick={() => window.location.href = '/upload'}>
+              <span className="flex items-center">
+                <Trophy className="mr-2 h-5 w-5" />
+                Upload a Model
+              </span>
+            </AnimatedButton>
+          </AnimatedCard>
+        )}
         
         {/* Load more button */}
         {!showMoreUsers && sortedLeaderboard.length > 3 && (
