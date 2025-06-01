@@ -23,6 +23,7 @@ import { useSession } from 'next-auth/react';
 import { useSupabase } from '@/providers/SupabaseProvider';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { toast } from 'react-hot-toast';
+import AccountDeletionModal from '@/components/AccountDeletionModal';
 
 interface SessionUser {
   id: string;
@@ -175,6 +176,7 @@ export default function DashboardPage() {
   const [chartHovered, setChartHovered] = useState<number | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [hasCompletedProfile, setHasCompletedProfile] = useState(false);
+  const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const [stats, setStats] = useState<StatCard[]>([]);
   const [myModels, setMyModels] = useState<any[]>([]);
@@ -433,6 +435,49 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Error handling profile completion:", error);
       toast.error("There was an error updating your profile. Please try again.");
+    }
+  };
+  
+  // Handle account deletion
+  const handleDeleteAccount = async () => {
+    try {
+      // Show loading toast
+      const loadingToast = toast.loading('Sending account deletion confirmation email...');
+      
+      // Call API to initiate account deletion
+      const response = await fetch('/api/user/delete-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to initiate account deletion');
+      }
+      
+      const data = await response.json();
+      
+      // Close the modal automatically
+      setIsDeleteAccountModalOpen(false);
+      
+      // Show success toast
+      toast.success('Confirmation email sent! Please check your inbox to complete account deletion.');
+      
+      // If in development mode and devInfo is available, log the URL for easy testing
+      if (data.devInfo && process.env.NODE_ENV === 'development') {
+        console.log('Deletion confirmation URL (dev only):', data.devInfo.confirmationUrl);
+      }
+      
+    } catch (error: any) {
+      console.error('Error initiating account deletion:', error);
+      
+      // Show error toast
+      toast.error(error.message || 'An error occurred while initiating account deletion');
     }
   };
   
@@ -761,7 +806,7 @@ export default function DashboardPage() {
                           <h3 className="text-lg font-semibold mb-3">Skills</h3>
                           {userData?.skills && userData.skills.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
-                              {userData.skills.map((skill, index) => (
+                              {userData.skills.map((skill: string, index: number) => (
                                 <span 
                                   key={index} 
                                   className="px-3 py-1 bg-purple-900/30 border border-purple-900/50 rounded-full text-sm"
@@ -779,7 +824,7 @@ export default function DashboardPage() {
                           <h3 className="text-lg font-semibold mb-3">Interests</h3>
                           {userData?.interests && userData.interests.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
-                              {userData.interests.map((interest, index) => (
+                              {userData.interests.map((interest: string, index: number) => (
                                 <span 
                                   key={index} 
                                   className="px-3 py-1 bg-blue-900/30 border border-blue-900/50 rounded-full text-sm"
@@ -1177,7 +1222,12 @@ export default function DashboardPage() {
                     <div className="flex-1">
                       <h3 className="text-lg font-medium text-red-400">Danger Zone</h3>
                       <p className="text-sm text-gray-400 my-2">Permanently delete your account and all related data</p>
-                      <AnimatedButton variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10">
+                      <AnimatedButton 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        onClick={() => setIsDeleteAccountModalOpen(true)}
+                      >
                         Delete Account
                       </AnimatedButton>
                     </div>
@@ -1190,6 +1240,19 @@ export default function DashboardPage() {
       </main>
       
       <Footer />
+      
+      {/* Account Deletion Modal */}
+      {session && (
+        <AccountDeletionModal
+          isOpen={isDeleteAccountModalOpen}
+          onClose={() => setIsDeleteAccountModalOpen(false)}
+          onConfirmDelete={handleDeleteAccount}
+          userData={{
+            email: getUserEmail(userData, session),
+            username: userData?.username
+          }}
+        />
+      )}
       
       {/* Profile Completion Modal */}
       {session && (

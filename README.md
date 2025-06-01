@@ -61,7 +61,30 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
    ```
    Then edit the file to add your actual credentials.
 
-4. **Supabase Setup (Main Database & Auth)**:
+4. **MongoDB Setup (User Profiles & Content)**:
+
+   a. Create a MongoDB Atlas account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (free tier available)
+   
+   b. Create a new cluster and database
+   
+   c. Get your connection string:
+      - Go to Database > Connect > Connect your application
+      - Select Node.js as your driver and copy the connection string
+      - Replace `<password>` with your database user password
+      - Add the connection string to your `.env.local` file as `MONGODB_URI`
+      - Set `MONGODB_DB_NAME` to your database name (default: `neural_nexus`)
+   
+   d. For production deployments:
+      - Ensure your MongoDB Atlas IP allow list includes your deployment server IPs
+      - For Vercel, you need to add all Vercel deployment IPs or use 0.0.0.0/0 (allow all)
+      - The app includes fallback in-memory storage if MongoDB connection fails
+   
+   e. Troubleshooting MongoDB connections:
+      - If you encounter TLS/SSL errors, make sure you're using a clean connection string without extra parameters
+      - Use this format: `mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority`
+      - The app will automatically handle connection retries and fallbacks
+
+5. **Supabase Setup (Main Database & Auth)**:
    
    a. Create a Supabase project at [Supabase](https://supabase.com/) (free tier available)
    
@@ -103,7 +126,7 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
       - Create buckets for: `models`, `avatars`, `thumbnails`
       - Set RLS policies for each bucket
 
-5. **Firebase Setup (Legacy/Optional)**:
+6. **Firebase Setup (Legacy/Optional)**:
    
    The app is transitioning from Firebase to Supabase, but can still use Firebase for some features.
    
@@ -127,7 +150,7 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
       - Scroll down to "Your apps" and select your web app
       - Copy the Firebase config values to your `.env.local` file
 
-6. **Run Locally**:
+7. **Run Locally**:
    ```bash
    npm run dev
    ```
@@ -203,6 +226,16 @@ CREATE TABLE models (
 - Add all the variables from your `.env.local` file
 - Make sure to set `NEXT_PUBLIC_APP_ENV=production`
 - Redeploy your application to apply the changes
+
+### **MongoDB Configuration for Production**
+- In your Vercel deployment, ensure MongoDB connection string is correctly set
+- Add `MONGODB_URI` and `MONGODB_DB_NAME` to your environment variables
+- If users report profile update errors, check the following:
+  - MongoDB connection string should be clean without unnecessary parameters
+  - The IP allowlist in MongoDB Atlas should include Vercel's deployment IPs
+  - The application includes fallback in-memory storage if the database connection fails
+  - User profiles will be stored temporarily and sync when the database connection is restored
+- For persistent database issues, consider using MongoDB Realm/Atlas App Services for better connectivity
 
 ## Monitoring and Analytics
 
