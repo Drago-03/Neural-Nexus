@@ -5,6 +5,9 @@ import { UserService } from '@/lib/models/user';
 import { closeMongoDBConnection } from '@/lib/mongodb';
 import crypto from 'crypto';
 
+// Add static export configuration at the top
+export const dynamic = 'force-dynamic';
+
 // Force Node.js runtime for this route
 export const runtime = 'nodejs';
 

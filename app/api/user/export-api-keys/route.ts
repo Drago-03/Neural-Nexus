@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { UserService } from '@/lib/models/user';
 
+// Add dynamic export configuration
+export const dynamic = 'force-dynamic';
+
 // Force Node.js runtime for this route
 export const runtime = 'nodejs';
 

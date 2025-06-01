@@ -6,6 +6,9 @@ import { UserService } from '@/lib/models/user';
 // Force Node.js runtime for this route
 export const runtime = 'nodejs';
 
+// Add dynamic export configuration
+export const dynamic = 'force-dynamic';
+
 /**
  * GET handler for /api/user/export-data
  * Generates an export of the user's data

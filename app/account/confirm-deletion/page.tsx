@@ -1,13 +1,46 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Check, Clock, Download, FileArchive, FileText, Key, Loader2, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Check, Clock, Download, FileArchive, FileText, Key, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 
-export default function ConfirmDeletionPage() {
+// Loading component to show while suspense is active
+function ConfirmDeletionLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-2xl">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl"
+        >
+          <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+            <h1 className="text-xl font-bold">Account Deletion</h1>
+            <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+              Back to Dashboard
+            </Link>
+          </div>
+          
+          <div className="p-6">
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="w-16 h-16 mb-4 flex items-center justify-center">
+                <Loader2 className="h-10 w-10 text-purple-500 animate-spin" />
+              </div>
+              <p className="text-gray-400">Loading confirmation page...</p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// Content component that uses useSearchParams
+function ConfirmDeletionContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -397,5 +430,14 @@ export default function ConfirmDeletionPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+// Main export component with suspense boundary
+export default function ConfirmDeletionPage() {
+  return (
+    <Suspense fallback={<ConfirmDeletionLoading />}>
+      <ConfirmDeletionContent />
+    </Suspense>
   );
 } 
