@@ -160,7 +160,7 @@ export default function SignUpPage() {
       });
 
       // Also validate confirm password if it's been touched
-      if (fields.confirmPassword.touched) {
+      if (fields.confirmPassword.touched && fields.confirmPassword.value) {
         const matchResult = checkPasswordsMatch(value, fields.confirmPassword.value);
         updateField('confirmPassword', { 
           valid: matchResult.valid, 
@@ -171,6 +171,16 @@ export default function SignUpPage() {
     }, 400)).current,
 
     confirmPassword: useRef(debounce((value: string) => {
+      // Only validate if there's a value to check
+      if (!value) {
+        updateField('confirmPassword', {
+          valid: false,
+          error: "Please confirm your password",
+          validating: false
+        });
+        return;
+      }
+      
       const result = checkPasswordsMatch(fields.password.value, value);
       updateField('confirmPassword', { 
         valid: result.valid, 
@@ -312,6 +322,14 @@ export default function SignUpPage() {
         message: "You need to accept the Terms of Service and Privacy Policy"
       });
       isValid = false;
+    }
+
+    // If form is invalid, set a general error message
+    if (!isValid) {
+      setError({
+        field: 'general',
+        message: "Please check your information and try again."
+      });
     }
 
     return isValid;
@@ -650,6 +668,18 @@ export default function SignUpPage() {
                 theme="dark"
               />
             </div>
+          )}
+
+          {/* General form error message */}
+          {error && error.field === 'general' && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start"
+            >
+              <AlertCircle className="h-4 w-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+              <p className="text-red-300 text-sm">{error.message}</p>
+            </motion.div>
           )}
 
           <Button

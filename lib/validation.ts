@@ -171,9 +171,17 @@ export const checkPasswordStrength = (password: string): {
 
 // Password confirmation validation
 export const checkPasswordsMatch = (password: string, confirmPassword: string): { valid: boolean; message?: string } => {
+  // If confirm password is empty, don't validate yet
+  if (!confirmPassword) {
+    return { valid: false, message: "Please confirm your password!" };
+  }
+  
+  // Check if passwords match
   if (password !== confirmPassword) {
     return { valid: false, message: "Passwords don't match, check again!" };
   }
+  
+  // Passwords match
   return { valid: true };
 };
 

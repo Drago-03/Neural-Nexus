@@ -371,25 +371,25 @@ const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                 
                 <h2 className="text-xl font-bold text-center mb-2">Final Confirmation</h2>
                 <p className="text-gray-400 text-center mb-6">
-                  To confirm, please type your email address:
+                  Please enter your registered email address below to confirm:
                 </p>
                 
                 <div className="space-y-4 mb-6">
                   <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
                     <p className="text-sm text-gray-300">
-                      <span className="font-semibold text-amber-400">Important:</span> We'll send a confirmation link to your email. Your account will be scheduled for deletion after you click that link and will be permanently deleted in 24 hours.
+                      <span className="font-semibold text-amber-400">Important:</span> We'll send a confirmation link to your email. Your account will be scheduled for deletion after you click that link and will be permanently deleted in 48 hours.
                     </p>
                   </div>
                   
                   <div>
                     <label htmlFor="confirm-email" className="block text-sm font-medium text-gray-400 mb-1">
-                      Your email: {userData?.email}
+                      Your registered email address
                     </label>
                     <input
                       ref={emailInputRef}
                       id="confirm-email"
                       type="email"
-                      placeholder="Enter your email address"
+                      placeholder="Enter your registered email address"
                       value={confirmEmail}
                       onChange={(e) => setConfirmEmail(e.target.value)}
                       className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
@@ -435,16 +435,16 @@ const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                 
                 <h2 className="text-xl font-bold text-center mb-2">Confirmation Email Sent</h2>
                 <p className="text-gray-400 text-center mb-6">
-                  We've sent a confirmation link to <span className="text-white font-medium">{userData?.email}</span>
+                  We've sent a confirmation link to your registered email address
                 </p>
                 
                 <div className="space-y-4 mb-6">
                   <div className="p-4 bg-gray-800/50 rounded-lg border border-amber-700/30 flex items-start gap-3">
                     <Clock className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm text-amber-300 font-medium mb-1">24-Hour Grace Period</p>
+                      <p className="text-sm text-amber-300 font-medium mb-1">48-Hour Grace Period</p>
                       <p className="text-sm text-gray-300">
-                        After clicking the confirmation link, your account will be scheduled for deletion and permanently removed after 24 hours. You can cancel the deletion by logging in during this period.
+                        After clicking the confirmation link, your account will be scheduled for deletion and permanently removed after 48 hours. You can cancel the deletion by logging in during this period.
                       </p>
                     </div>
                   </div>

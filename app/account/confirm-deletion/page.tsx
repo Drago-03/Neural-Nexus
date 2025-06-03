@@ -86,9 +86,9 @@ function ConfirmDeletionContent() {
       // Set success status
       setStatus('success');
       
-      // Calculate deletion time (24 hours from now)
+      // Calculate deletion time (48 hours from now)
       const deletionDate = new Date();
-      deletionDate.setHours(deletionDate.getHours() + 24);
+      deletionDate.setHours(deletionDate.getHours() + 48);
       setDeletionTime(deletionDate);
       
       // Update countdown immediately
@@ -305,9 +305,9 @@ function ConfirmDeletionContent() {
                   <div className="w-16 h-16 mb-4 flex items-center justify-center bg-green-900/20 rounded-full">
                     <Check className="h-8 w-8 text-green-500" />
                   </div>
-                  <h2 className="text-lg font-medium mb-2">Account Deletion Confirmed</h2>
+                  <h2 className="text-lg font-medium mb-2">Thanks for Confirming</h2>
                   <p className="text-gray-400 text-center max-w-md">
-                    Your account will be permanently deleted in 24 hours. You can cancel the deletion process by logging in during this time.
+                    Your account will be permanently deleted in 48 hours. You can cancel the deletion process by logging in during this time.
                   </p>
                 </div>
                 

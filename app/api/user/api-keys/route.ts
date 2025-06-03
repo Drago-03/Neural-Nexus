@@ -1,248 +1,193 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getCollection } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import { UserService } from '@/lib/models/user';
 import crypto from 'crypto';
+import { ObjectId } from 'mongodb';
+import { getCollection } from '@/lib/mongodb';
+
+// Add dynamic export configuration
+export const dynamic = 'force-dynamic';
 
 // Force Node.js runtime for this route
 export const runtime = 'nodejs';
 
+// Interface for API key
 interface ApiKey {
   _id?: ObjectId;
   userId: string;
   name: string;
-  key: string; // Hashed API key
-  prefix: string; // Visible prefix for display
-  created: Date;
+  key: string;
+  prefix: string;
+  keyType: 'test' | 'train' | 'deploy' | 'development' | 'production';
+  createdAt: Date;
   lastUsed?: Date;
   expiresAt?: Date;
-  permissions: string[];
   usageLimit?: number;
-  usageCount: number;
+  currentUsage?: number;
   isActive: boolean;
 }
 
-// GET /api/user/api-keys - Get user's API keys
+/**
+ * GET handler for /api/user/api-keys
+ * Retrieves all API keys for the authenticated user
+ */
 export async function GET(req: NextRequest) {
   try {
-    console.log("🔍 API Keys: Processing GET request");
-    const startTime = Date.now();
-    
-    // Authenticate user
+    // Get current user session
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      console.warn("🛑 API Keys: Unauthorized access attempt");
       return NextResponse.json(
-        { error: 'Unauthorized - No active session' },
+        { error: 'Unauthorized - You must be logged in to access API keys' },
         { status: 401 }
       );
     }
     
     const userId = session.user.id;
-    console.log(`✅ API Keys: Authenticated user ${userId}`);
     
-    // Fetch API keys from database - real-time data
-    try {
-      const apiKeysCollection = await getCollection('api_keys');
+    // Get API keys collection
+    const collection = await getCollection<ApiKey>('api_keys');
+    
+    // Get all API keys for this user
+    const apiKeys = await collection.find({ userId }).toArray();
+    
+    // Mask the actual keys before returning (security best practice)
+    const maskedApiKeys = apiKeys.map(key => {
+      // Create a display version that only shows a few characters
+      const keyLength = key.key.length;
+      const maskedKey = `${key.prefix}${key.key.substring(4, 8)}...${key.key.substring(keyLength - 4)}`;
       
-      // Get user's API keys, don't return the hashed key value
-      const apiKeys = await apiKeysCollection
-        .find({ userId })
-        .project({ key: 0 }) // Don't include the hashed key
-        .sort({ created: -1 })
-        .toArray();
-      
-      console.log(`📊 API Keys: Found ${apiKeys.length} keys for user ${userId}`);
-      
-      // Get usage data for each key
-      const apiUsageCollection = await getCollection('api_usage');
-      const usagePromises = apiKeys.map(async (key: any) => {
-        const keyId = key._id.toString();
-        const recentUsage = await apiUsageCollection
-          .find({ apiKeyId: keyId })
-          .sort({ timestamp: -1 })
-          .limit(1)
-          .toArray();
-          
-        // Update last used time if available
-        if (recentUsage.length > 0) {
-          key.lastUsed = recentUsage[0].timestamp;
-        }
-        
-        // Count usage in the last 30 days
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        const monthlyUsage = await apiUsageCollection
-          .countDocuments({ 
-            apiKeyId: keyId,
-            timestamp: { $gte: thirtyDaysAgo }
-          });
-          
-        key.monthlyUsage = monthlyUsage;
-        
-        return key;
-      });
-      
-      // Wait for all usage data to be fetched
-      const keysWithUsage = await Promise.all(usagePromises);
-      
-      // Calculate response time
-      const responseTime = Date.now() - startTime;
-      console.log(`⏱️ API Keys: Request completed in ${responseTime}ms`);
-      
-      return NextResponse.json({
-        success: true,
-        apiKeys: keysWithUsage,
-        totalCount: keysWithUsage.length,
-        lastUpdated: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error("❌ API Keys: Database error:", error);
-      throw error;
-    }
-  } catch (error) {
-    console.error('❌ API Keys: Error getting API keys:', error);
-    return NextResponse.json(
-      { 
-        error: 'Failed to fetch API keys',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+      return {
+        ...key,
+        key: maskedKey
+      };
+    });
+    
+    return NextResponse.json({
+      success: true,
+      apiKeys: maskedApiKeys
+    });
+    
+  } catch (error: any) {
+    console.error('Error retrieving API keys:', error);
+    
+    return NextResponse.json({
+      error: `Failed to retrieve API keys: ${error.message || 'Unknown error'}`,
+      success: false
+    }, {
+      status: 500
+    });
   }
 }
 
-// POST /api/user/api-keys - Create a new API key
+/**
+ * POST handler for /api/user/api-keys
+ * Creates a new API key for the authenticated user
+ */
 export async function POST(req: NextRequest) {
   try {
-    console.log("🔍 API Keys: Processing POST request");
-    const startTime = Date.now();
-    
-    // Authenticate user
+    // Get current user session
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      console.warn("🛑 API Keys: Unauthorized access attempt");
       return NextResponse.json(
-        { error: 'Unauthorized - No active session' },
+        { error: 'Unauthorized - You must be logged in to create API keys' },
         { status: 401 }
       );
     }
     
     const userId = session.user.id;
-    console.log(`✅ API Keys: Authenticated user ${userId}`);
     
     // Parse request body
-    const { name, permissions, expiresIn } = await req.json();
+    const body = await req.json();
+    const { name = 'API Key', keyType = 'development' } = body;
     
-    if (!name) {
+    // Get API keys collection
+    const collection = await getCollection<ApiKey>('api_keys');
+    
+    // Check the number of existing API keys for this user
+    const existingKeysCount = await collection.countDocuments({ userId });
+    
+    // Limit the number of API keys a user can have (optional)
+    const maxApiKeys = 10;
+    if (existingKeysCount >= maxApiKeys) {
       return NextResponse.json(
-        { error: 'Key name is required' },
+        { error: `You've reached the maximum limit of ${maxApiKeys} API keys` },
         { status: 400 }
       );
     }
     
-    // Generate new API key with prefix
-    // Only show this to the user once - we'll store the hash
-    const apiKeyRaw = crypto.randomBytes(32).toString('hex');
-    const prefix = crypto.randomBytes(4).toString('hex');
-    const displayKey = `${prefix}_${apiKeyRaw}`;
+    // Generate a unique API key
+    const keyPrefix = getKeyPrefix(keyType);
+    const key = `${keyPrefix}${crypto.randomBytes(24).toString('hex')}`;
     
-    // Hash the key for storage
-    const hashedKey = crypto
-      .createHash('sha256')
-      .update(displayKey)
-      .digest('hex');
+    // Set usage limit based on key type
+    const usageLimit = getUsageLimitForKeyType(keyType);
     
-    // Calculate expiry date if specified
-    let expiresAt;
-    if (expiresIn) {
-      expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + parseInt(expiresIn));
-    }
-    
-    // Create API key record
+    // Create the new API key record
     const newApiKey: ApiKey = {
       userId,
       name,
-      key: hashedKey,
-      prefix,
-      created: new Date(),
-      permissions: permissions || ['read'],
-      usageCount: 0,
-      isActive: true,
-      expiresAt
+      key,
+      prefix: keyPrefix,
+      keyType: keyType as ApiKey['keyType'],
+      createdAt: new Date(),
+      usageLimit,
+      currentUsage: 0,
+      isActive: true
     };
     
-    try {
-      // Save to database
-      const apiKeysCollection = await getCollection('api_keys');
-      const result = await apiKeysCollection.insertOne(newApiKey);
-      
-      if (!result.insertedId) {
-        throw new Error('Failed to create API key');
-      }
-      
-      console.log(`✅ API Keys: Created new key ${prefix} for user ${userId}`);
-      
-      // Calculate response time
-      const responseTime = Date.now() - startTime;
-      console.log(`⏱️ API Keys: Request completed in ${responseTime}ms`);
-      
-      // Return the key to the user - this is the only time they'll see it
-      return NextResponse.json({
-        success: true,
-        apiKey: {
-          id: result.insertedId,
-          name,
-          key: displayKey, // Only returned once
-          prefix,
-          created: newApiKey.created,
-          permissions: newApiKey.permissions,
-          expiresAt
-        }
-      }, { status: 201 });
-    } catch (error) {
-      console.error("❌ API Keys: Database error:", error);
-      throw error;
+    // Insert the new API key
+    const result = await collection.insertOne(newApiKey);
+    
+    if (!result.acknowledged) {
+      throw new Error('Failed to create API key');
     }
-  } catch (error) {
-    console.error('❌ API Keys: Error creating API key:', error);
-    return NextResponse.json(
-      { 
-        error: 'Failed to create API key',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    
+    // Return the newly created API key (this is the only time the full key is returned)
+    return NextResponse.json({
+      success: true,
+      message: 'API key created successfully',
+      apiKey: {
+        ...newApiKey,
+        _id: result.insertedId
+      }
+    });
+    
+  } catch (error: any) {
+    console.error('Error creating API key:', error);
+    
+    return NextResponse.json({
+      error: `Failed to create API key: ${error.message || 'Unknown error'}`,
+      success: false
+    }, {
+      status: 500
+    });
   }
 }
 
-// DELETE /api/user/api-keys - Delete an API key
+/**
+ * DELETE handler for /api/user/api-keys
+ * Deletes an API key for the authenticated user
+ */
 export async function DELETE(req: NextRequest) {
   try {
-    console.log("🔍 API Keys: Processing DELETE request");
-    const startTime = Date.now();
-    
-    // Authenticate user
+    // Get current user session
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      console.warn("🛑 API Keys: Unauthorized access attempt");
       return NextResponse.json(
-        { error: 'Unauthorized - No active session' },
+        { error: 'Unauthorized - You must be logged in to delete API keys' },
         { status: 401 }
       );
     }
     
     const userId = session.user.id;
     
-    // Get key ID from URL
-    const { searchParams } = new URL(req.url);
-    const keyId = searchParams.get('id');
+    // Get API key ID from query parameters
+    const url = new URL(req.url);
+    const keyId = url.searchParams.get('id');
     
     if (!keyId) {
       return NextResponse.json(
@@ -251,63 +196,64 @@ export async function DELETE(req: NextRequest) {
       );
     }
     
-    console.log(`🔄 API Keys: Attempting to delete key ${keyId} for user ${userId}`);
+    // Get API keys collection
+    const collection = await getCollection<ApiKey>('api_keys');
     
-    try {
-      // Find and delete the key, ensuring it belongs to this user
-      const apiKeysCollection = await getCollection('api_keys');
-      const result = await apiKeysCollection.deleteOne({
-        _id: new ObjectId(keyId),
-        userId
-      });
-      
-      if (result.deletedCount === 0) {
-        console.warn(`❌ API Keys: No key found with ID ${keyId} for user ${userId}`);
-        return NextResponse.json(
-          { error: 'API key not found or does not belong to current user' },
-          { status: 404 }
-        );
-      }
-      
-      console.log(`✅ API Keys: Successfully deleted key ${keyId}`);
-      
-      // Calculate response time
-      const responseTime = Date.now() - startTime;
-      console.log(`⏱️ API Keys: Request completed in ${responseTime}ms`);
-      
-      return NextResponse.json({
-        success: true,
-        message: 'API key deleted successfully'
-      });
-    } catch (error) {
-      console.error("❌ API Keys: Database error:", error);
-      throw error;
+    // Find the API key to ensure it belongs to this user
+    const apiKey = await collection.findOne({
+      _id: new ObjectId(keyId),
+      userId
+    });
+    
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'API key not found or does not belong to you' },
+        { status: 404 }
+      );
     }
-  } catch (error) {
-    console.error('❌ API Keys: Error deleting API key:', error);
-    return NextResponse.json(
-      { 
-        error: 'Failed to delete API key',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    
+    // Delete the API key
+    const result = await collection.deleteOne({
+      _id: new ObjectId(keyId),
+      userId
+    });
+    
+    if (result.deletedCount === 0) {
+      return NextResponse.json(
+        { error: 'Failed to delete API key' },
+        { status: 500 }
+      );
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: 'API key deleted successfully'
+    });
+    
+  } catch (error: any) {
+    console.error('Error deleting API key:', error);
+    
+    return NextResponse.json({
+      error: `Failed to delete API key: ${error.message || 'Unknown error'}`,
+      success: false
+    }, {
+      status: 500
+    });
   }
 }
 
-// PATCH /api/user/api-keys - Update an API key (e.g., to disable it)
+/**
+ * PATCH handler for /api/user/api-keys
+ * Updates an API key (refresh or toggle active state)
+ */
 export async function PATCH(req: NextRequest) {
   try {
-    console.log("🔍 API Keys: Processing PATCH request");
-    const startTime = Date.now();
-    
-    // Authenticate user
+    // Get current user session
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      console.warn("🛑 API Keys: Unauthorized access attempt");
       return NextResponse.json(
-        { error: 'Unauthorized - No active session' },
+        { error: 'Unauthorized - You must be logged in to update API keys' },
         { status: 401 }
       );
     }
@@ -315,66 +261,135 @@ export async function PATCH(req: NextRequest) {
     const userId = session.user.id;
     
     // Parse request body
-    const { id, isActive, name, permissions } = await req.json();
+    const body = await req.json();
+    const { keyId, action } = body;
     
-    if (!id) {
+    if (!keyId || !action) {
       return NextResponse.json(
-        { error: 'API key ID is required' },
+        { error: 'API key ID and action are required' },
         { status: 400 }
       );
     }
     
-    console.log(`🔄 API Keys: Updating key ${id} for user ${userId}`);
+    // Verify that the action is valid
+    if (!['refresh', 'toggle'].includes(action)) {
+      return NextResponse.json(
+        { error: 'Invalid action. Supported actions: refresh, toggle' },
+        { status: 400 }
+      );
+    }
     
-    // Create update object
-    const updates: Partial<ApiKey> = {};
+    // Get API keys collection
+    const collection = await getCollection<ApiKey>('api_keys');
     
-    // Only include fields that are explicitly provided
-    if (isActive !== undefined) updates.isActive = isActive;
-    if (name) updates.name = name;
-    if (permissions) updates.permissions = permissions;
+    // Find the API key to ensure it belongs to this user
+    const apiKey = await collection.findOne({
+      _id: new ObjectId(keyId),
+      userId
+    });
     
-    try {
-      // Update the key, ensuring it belongs to this user
-      const apiKeysCollection = await getCollection('api_keys');
-      const result = await apiKeysCollection.updateOne(
-        {
-          _id: new ObjectId(id),
-          userId
-        },
-        { $set: updates }
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'API key not found or does not belong to you' },
+        { status: 404 }
+      );
+    }
+    
+    if (action === 'refresh') {
+      // Generate a new key but keep the same settings
+      const newKey = `${apiKey.prefix}${crypto.randomBytes(24).toString('hex')}`;
+      
+      // Update the API key
+      const result = await collection.updateOne(
+        { _id: new ObjectId(keyId), userId },
+        { 
+          $set: { 
+            key: newKey,
+            createdAt: new Date(),
+            currentUsage: 0
+          } 
+        }
       );
       
-      if (result.matchedCount === 0) {
-        console.warn(`❌ API Keys: No key found with ID ${id} for user ${userId}`);
+      if (result.modifiedCount === 0) {
         return NextResponse.json(
-          { error: 'API key not found or does not belong to current user' },
-          { status: 404 }
+          { error: 'Failed to refresh API key' },
+          { status: 500 }
         );
       }
       
-      console.log(`✅ API Keys: Successfully updated key ${id}`);
+      // Return the refreshed API key
+      return NextResponse.json({
+        success: true,
+        message: 'API key refreshed successfully',
+        apiKey: {
+          ...apiKey,
+          key: newKey,
+          createdAt: new Date(),
+          currentUsage: 0
+        }
+      });
       
-      // Calculate response time
-      const responseTime = Date.now() - startTime;
-      console.log(`⏱️ API Keys: Request completed in ${responseTime}ms`);
+    } else if (action === 'toggle') {
+      // Toggle the active state
+      const newActiveState = !apiKey.isActive;
+      
+      // Update the API key
+      const result = await collection.updateOne(
+        { _id: new ObjectId(keyId), userId },
+        { $set: { isActive: newActiveState } }
+      );
+      
+      if (result.modifiedCount === 0) {
+        return NextResponse.json(
+          { error: 'Failed to toggle API key state' },
+          { status: 500 }
+        );
+      }
       
       return NextResponse.json({
         success: true,
-        message: 'API key updated successfully'
+        message: `API key ${newActiveState ? 'activated' : 'deactivated'} successfully`,
+        isActive: newActiveState
       });
-    } catch (error) {
-      console.error("❌ API Keys: Database error:", error);
-      throw error;
     }
-  } catch (error) {
-    console.error('❌ API Keys: Error updating API key:', error);
-    return NextResponse.json(
-      { 
-        error: 'Failed to update API key',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    
+  } catch (error: any) {
+    console.error('Error updating API key:', error);
+    
+    return NextResponse.json({
+      error: `Failed to update API key: ${error.message || 'Unknown error'}`,
+      success: false
+    }, {
+      status: 500
+    });
+  }
+}
+
+/**
+ * Helper function to get a prefix for different key types
+ */
+function getKeyPrefix(keyType: string): string {
+  switch (keyType) {
+    case 'test': return 'nxt_';
+    case 'train': return 'ntr_';
+    case 'deploy': return 'ndp_';
+    case 'production': return 'npr_';
+    case 'development':
+    default: return 'nnd_';
+  }
+}
+
+/**
+ * Helper function to get usage limits for different key types
+ */
+function getUsageLimitForKeyType(keyType: string): number {
+  switch (keyType) {
+    case 'test': return 1000;
+    case 'train': return 10000;
+    case 'deploy': return 50000;
+    case 'production': return 100000;
+    case 'development':
+    default: return 5000;
   }
 } 

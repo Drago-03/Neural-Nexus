@@ -47,9 +47,9 @@ export async function POST(req: NextRequest) {
     // Generate a secure deletion token
     const deletionToken = crypto.randomBytes(32).toString('hex');
     
-    // Set expiration time to 24 hours from now
+    // Set expiration time to 48 hours from now
     const expirationTime = new Date();
-    expirationTime.setHours(expirationTime.getHours() + 24);
+    expirationTime.setHours(expirationTime.getHours() + 48);
     
     // Store the deletion token and expiration in the user record
     await UserService.updateUser(userId, {
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     // Simulate sending an email
     console.log(`Email would be sent to: ${userData.email}`);
     console.log(`Email subject: Confirm your account deletion request`);
-    console.log(`Email body: Please confirm your request to delete your Neural Nexus account by clicking this link: ${confirmationUrl}`);
+    console.log(`Email body: Please confirm your request to delete your Neural Nexus account by clicking this link: ${confirmationUrl}. After confirmation, your account will be scheduled for deletion and will be permanently removed after 48 hours. You can cancel the deletion by logging in during this period.`);
     
     // Return success response with token info (for demo purposes)
     return NextResponse.json({

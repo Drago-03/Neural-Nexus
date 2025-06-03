@@ -10,7 +10,8 @@ import {
   Plus, Upload, Zap, Users, DollarSign, 
   BarChart2, TrendingUp, Clock, Diamond, Settings,
   Layers, Database, Award, Bookmark, Eye, AlertTriangle,
-  Key, Copy, RefreshCw, Trash2, Code, Lock, Download, User, Building, Briefcase, MapPin, LinkIcon
+  Key, Copy, RefreshCw, Trash2, Code, Lock, Download, User, Building, Briefcase, MapPin, LinkIcon,
+  Loader2, X, Check
 } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -182,6 +183,8 @@ export default function DashboardPage() {
   const [myModels, setMyModels] = useState<any[]>([]);
   const [revenueData, setRevenueData] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [isLoadingApiKeys, setIsLoadingApiKeys] = useState(true);
   
   const router = useRouter();
   const { user: appUser } = useAppContext();
@@ -193,6 +196,46 @@ export default function DashboardPage() {
   
   // Find the highest value for chart scaling (minimum of 1 to avoid division by zero)
   const maxRevenue = Math.max(...(revenueData?.map(item => item.amount) || []), 1);
+  
+  // Function to fetch API keys from the backend
+  const fetchApiKeys = async () => {
+    try {
+      setIsLoadingApiKeys(true);
+      
+      const response = await fetch('/api/user/api-keys');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch API keys');
+      }
+      
+      const data = await response.json();
+      setApiKeys(data.apiKeys || []);
+      
+    } catch (error) {
+      console.error('Error fetching API keys:', error);
+      toast.error('Failed to load API keys');
+      setApiKeys([]);
+    } finally {
+      setIsLoadingApiKeys(false);
+    }
+  };
+  
+  // Function to get color for key type badge
+  const getKeyTypeColor = (keyType: string): string => {
+    switch (keyType) {
+      case 'test':
+        return 'bg-blue-500/20 text-blue-400';
+      case 'train':
+        return 'bg-amber-500/20 text-amber-400';
+      case 'deploy':
+        return 'bg-indigo-500/20 text-indigo-400';
+      case 'production':
+        return 'bg-green-500/20 text-green-400';
+      case 'development':
+      default:
+        return 'bg-purple-500/20 text-purple-400';
+    }
+  };
   
   // Check if user profile is complete and fetch user data
   useEffect(() => {
@@ -361,6 +404,13 @@ export default function DashboardPage() {
     }
   }, [session, status]);
 
+  // Fetch API keys when the API tab is selected
+  useEffect(() => {
+    if (activeTab === 'api') {
+      fetchApiKeys();
+    }
+  }, [activeTab]);
+
   // Handle profile completion
   const handleProfileComplete = async (profileData: any) => {
     try {
@@ -466,7 +516,7 @@ export default function DashboardPage() {
       setIsDeleteAccountModalOpen(false);
       
       // Show success toast
-      toast.success('Confirmation email sent! Please check your inbox to complete account deletion.');
+      toast.success('Confirmation email sent! Check your inbox to complete account deletion. Your account will be deleted 48 hours after confirmation.');
       
       // If in development mode and devInfo is available, log the URL for easy testing
       if (data.devInfo && process.env.NODE_ENV === 'development') {
@@ -876,9 +926,44 @@ export default function DashboardPage() {
                     variant="primary"
                     size="sm"
                     className="flex-shrink-0 flex items-center gap-2"
-                    onClick={() => {
-                      toast.success("Creating new API key...");
-                      // In a real app, this would call an API endpoint to create a new key
+                    onClick={async () => {
+                      try {
+                        toast.loading("Creating new API key...");
+                        
+                        // Call the API to create a new key
+                        const response = await fetch('/api/user/api-keys', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({
+                            name: 'API Key',
+                            keyType: 'development'
+                          })
+                        });
+                        
+                        if (!response.ok) {
+                          const errorData = await response.json();
+                          throw new Error(errorData.error || 'Failed to create API key');
+                        }
+                        
+                        const data = await response.json();
+                        
+                        // Show success message
+                        toast.dismiss();
+                        toast.success("API key created successfully!");
+                        
+                        // Show a dialog with the new API key
+                        // This is the only time the full key will be shown
+                        const confirmed = window.confirm(`Your new API key has been created. Copy it now as it won't be shown again:\n\n${data.apiKey.key}\n\nClick OK after you've copied it.`);
+                        
+                        // Refresh the API keys list
+                        fetchApiKeys();
+                        
+                      } catch (error: any) {
+                        toast.dismiss();
+                        toast.error(error.message || 'Failed to create API key');
+                      }
                     }}
                   >
                     <Key className="h-4 w-4" />
@@ -892,15 +977,17 @@ export default function DashboardPage() {
                     <div className="flex flex-col">
                       <h3 className="text-sm font-medium text-gray-400">Available API Calls</h3>
                       <p className="text-2xl font-bold mt-2">
-                        {activities.filter(a => a.type === 'api_call').length} / {Math.max(5000, activities.filter(a => a.type === 'api_call').length + 1000)}
+                        {apiKeys.reduce((acc, key) => acc + (key.currentUsage || 0), 0)} / {apiKeys.reduce((acc, key) => acc + (key.usageLimit || 5000), 0)}
                       </p>
                       <div className="w-full h-2 bg-gray-700 rounded-full mt-2 overflow-hidden">
                         <div 
                           className="bg-purple-500 h-full rounded-full" 
-                          style={{ width: `${Math.min(100, (activities.filter(a => a.type === 'api_call').length / 5000) * 100)}%` }}
+                          style={{ 
+                            width: `${apiKeys.reduce((acc, key) => acc + (key.currentUsage || 0), 0) / apiKeys.reduce((acc, key) => acc + (key.usageLimit || 5000), 0) * 100}%` 
+                          }}
                         ></div>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">Resets in {Math.floor(Math.random() * 30) + 1} days</p>
+                      <p className="text-xs text-gray-400 mt-1">Monthly usage across all keys</p>
                     </div>
                   </AnimatedCard>
                   
@@ -920,23 +1007,35 @@ export default function DashboardPage() {
                   
                   <AnimatedCard className="p-5">
                     <div className="flex flex-col">
-                      <h3 className="text-sm font-medium text-gray-400">Usage This Month</h3>
+                      <h3 className="text-sm font-medium text-gray-400">Active API Keys</h3>
                       <p className="text-2xl font-bold mt-2">
-                        ${((activities.filter(a => a.type === 'api_call').length / 1000) * 0.001).toFixed(2)}
+                        {apiKeys.filter(key => key.isActive).length} / {apiKeys.length}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        {activities.filter(a => a.type === 'api_call').length.toLocaleString()} tokens processed
+                        {apiKeys.filter(key => key.isActive).length === 0 ? 'No active keys' : 
+                         apiKeys.filter(key => key.isActive).length === 1 ? '1 active key' : 
+                         `${apiKeys.filter(key => key.isActive).length} active keys`}
                       </p>
                       <p className="text-xs text-green-400 mt-1">
-                        {activities.filter(a => a.type === 'api_call').length < 1000000 ? 'Free tier: No charges' : 'Paid tier'}
+                        {apiKeys.length === 0 ? 'Create your first key to get started' : 'Keys ready for use'}
                       </p>
                     </div>
                   </AnimatedCard>
                 </div>
                 
-                {/* API Keys Table - Show real keys or empty state */}
+                {/* API Keys Table */}
                 <AnimatedCard className="overflow-hidden">
-                  {activities.filter(a => a.type === 'api_key').length > 0 ? (
+                  {isLoadingApiKeys ? (
+                    <div className="py-12 text-center">
+                      <div className="mx-auto w-16 h-16 bg-gray-800/50 rounded-full flex items-center justify-center mb-4">
+                        <Loader2 className="h-8 w-8 text-gray-400 animate-spin" />
+                      </div>
+                      <h3 className="text-lg font-medium mb-2">Loading API Keys</h3>
+                      <p className="text-gray-400 max-w-md mx-auto">
+                        Please wait while we fetch your API keys...
+                      </p>
+                    </div>
+                  ) : apiKeys.length > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-800">
                         <thead className="bg-gray-800/50">
@@ -948,10 +1047,13 @@ export default function DashboardPage() {
                               Key
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                              Type
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                               Created
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                              Last Used
+                              Usage
                             </th>
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
                               Actions
@@ -959,16 +1061,18 @@ export default function DashboardPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-800">
-                          {activities.filter(a => a.type === 'api_key').slice(0, 2).map((key, index) => (
-                            <tr key={index} className="bg-gray-900/30 hover:bg-gray-800/30 transition-colors">
+                          {apiKeys.map((key) => (
+                            <tr key={key._id.toString()} className="bg-gray-900/30 hover:bg-gray-800/30 transition-colors">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
                                   <div className="ml-0">
-                                    <p className="text-sm font-medium">{key.details || (index === 0 ? 'Development Key' : 'Production Key')}</p>
+                                    <p className="text-sm font-medium">{key.name}</p>
                                     <span className={`px-2 py-1 text-xs rounded-full ${
-                                      index === 0 ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'
+                                      key.isActive 
+                                        ? 'bg-green-500/20 text-green-400' 
+                                        : 'bg-red-500/20 text-red-400'
                                     }`}>
-                                      {index === 0 ? 'Default' : 'Restricted'}
+                                      {key.isActive ? 'Active' : 'Inactive'}
                                     </span>
                                   </div>
                                 </div>
@@ -976,36 +1080,168 @@ export default function DashboardPage() {
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
                                   <p className="text-sm font-mono bg-gray-800 px-3 py-1 rounded">
-                                    {key.model || `NN-${Math.random().toString(36).substring(2, 10)}...`}
+                                    {key.key}
                                   </p>
                                   <button 
                                     className="ml-2 p-1 hover:bg-gray-800 rounded-md transition-colors"
                                     aria-label="Copy API key"
-                                    onClick={() => toast.success("API key copied to clipboard")}
+                                    onClick={() => {
+                                      // Copy the masked key to clipboard
+                                      navigator.clipboard.writeText(key.key);
+                                      toast.success("API key copied to clipboard");
+                                    }}
                                   >
                                     <Copy className="h-4 w-4 text-gray-400" />
                                   </button>
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <p className="text-sm">{key.time || new Date(Date.now() - Math.random() * 10000000000).toISOString().split('T')[0]}</p>
+                                <span className={`px-2 py-1 text-xs rounded-full ${getKeyTypeColor(key.keyType)}`}>
+                                  {key.keyType}
+                                </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <p className="text-sm">{new Date(Date.now() - Math.random() * 1000000000).toISOString().split('T')[0]}</p>
+                                <p className="text-sm">{new Date(key.createdAt).toLocaleDateString()}</p>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                  <p className="text-sm">{key.currentUsage || 0} / {key.usageLimit || 5000}</p>
+                                  <div className="w-24 h-1 bg-gray-700 rounded-full mt-1 overflow-hidden">
+                                    <div 
+                                      className="bg-purple-500 h-full rounded-full" 
+                                      style={{ 
+                                        width: `${((key.currentUsage || 0) / (key.usageLimit || 5000)) * 100}%` 
+                                      }}
+                                    ></div>
+                                  </div>
+                                </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-right">
                                 <div className="flex items-center justify-end space-x-2">
                                   <button 
                                     className="p-1 hover:bg-gray-700 rounded-lg transition-colors"
                                     aria-label="Refresh API key"
-                                    onClick={() => toast.success("API key refreshed")}
+                                    onClick={async () => {
+                                      try {
+                                        const confirmRefresh = window.confirm("Are you sure you want to refresh this API key? The current key will no longer work and a new one will be generated.");
+                                        
+                                        if (!confirmRefresh) return;
+                                        
+                                        toast.loading("Refreshing API key...");
+                                        
+                                        // Call API to refresh key
+                                        const response = await fetch('/api/user/api-keys', {
+                                          method: 'PATCH',
+                                          headers: {
+                                            'Content-Type': 'application/json'
+                                          },
+                                          body: JSON.stringify({
+                                            keyId: key._id,
+                                            action: 'refresh'
+                                          })
+                                        });
+                                        
+                                        if (!response.ok) {
+                                          const errorData = await response.json();
+                                          throw new Error(errorData.error || 'Failed to refresh API key');
+                                        }
+                                        
+                                        const data = await response.json();
+                                        
+                                        // Show success message
+                                        toast.dismiss();
+                                        toast.success("API key refreshed successfully!");
+                                        
+                                        // Show a dialog with the new API key
+                                        const confirmed = window.confirm(`Your new API key has been created. Copy it now as it won't be shown again:\n\n${data.apiKey.key}\n\nClick OK after you've copied it.`);
+                                        
+                                        // Refresh the API keys list
+                                        fetchApiKeys();
+                                        
+                                      } catch (error: any) {
+                                        toast.dismiss();
+                                        toast.error(error.message || 'Failed to refresh API key');
+                                      }
+                                    }}
                                   >
                                     <RefreshCw className="h-4 w-4 text-gray-400" />
                                   </button>
                                   <button 
                                     className="p-1 hover:bg-gray-700 rounded-lg transition-colors"
+                                    aria-label={key.isActive ? "Deactivate API key" : "Activate API key"}
+                                    onClick={async () => {
+                                      try {
+                                        toast.loading(key.isActive ? "Deactivating API key..." : "Activating API key...");
+                                        
+                                        // Call API to toggle key state
+                                        const response = await fetch('/api/user/api-keys', {
+                                          method: 'PATCH',
+                                          headers: {
+                                            'Content-Type': 'application/json'
+                                          },
+                                          body: JSON.stringify({
+                                            keyId: key._id,
+                                            action: 'toggle'
+                                          })
+                                        });
+                                        
+                                        if (!response.ok) {
+                                          const errorData = await response.json();
+                                          throw new Error(errorData.error || 'Failed to update API key');
+                                        }
+                                        
+                                        // Show success message
+                                        toast.dismiss();
+                                        toast.success(key.isActive ? "API key deactivated successfully!" : "API key activated successfully!");
+                                        
+                                        // Refresh the API keys list
+                                        fetchApiKeys();
+                                        
+                                      } catch (error: any) {
+                                        toast.dismiss();
+                                        toast.error(error.message || 'Failed to update API key');
+                                      }
+                                    }}
+                                  >
+                                    {key.isActive ? (
+                                      <X className="h-4 w-4 text-red-400" />
+                                    ) : (
+                                      <Check className="h-4 w-4 text-green-400" />
+                                    )}
+                                  </button>
+                                  <button 
+                                    className="p-1 hover:bg-gray-700 rounded-lg transition-colors"
                                     aria-label="Delete API key"
-                                    onClick={() => toast.error("Cannot delete the only API key")}
+                                    onClick={async () => {
+                                      try {
+                                        const confirmDelete = window.confirm("Are you sure you want to delete this API key? This action cannot be undone.");
+                                        
+                                        if (!confirmDelete) return;
+                                        
+                                        toast.loading("Deleting API key...");
+                                        
+                                        // Call API to delete key
+                                        const response = await fetch(`/api/user/api-keys?id=${key._id}`, {
+                                          method: 'DELETE'
+                                        });
+                                        
+                                        if (!response.ok) {
+                                          const errorData = await response.json();
+                                          throw new Error(errorData.error || 'Failed to delete API key');
+                                        }
+                                        
+                                        // Show success message
+                                        toast.dismiss();
+                                        toast.success("API key deleted successfully!");
+                                        
+                                        // Refresh the API keys list
+                                        fetchApiKeys();
+                                        
+                                      } catch (error: any) {
+                                        toast.dismiss();
+                                        toast.error(error.message || 'Failed to delete API key');
+                                      }
+                                    }}
                                   >
                                     <Trash2 className="h-4 w-4 text-red-400" />
                                   </button>
@@ -1023,18 +1259,52 @@ export default function DashboardPage() {
                       </div>
                       <h3 className="text-lg font-medium mb-2">No API Keys Found</h3>
                       <p className="text-gray-400 max-w-md mx-auto mb-6">
-                        You haven't created any API keys yet. Create your first key to start integrating with Neural Nexus.
+                        You haven't created any API keys yet. Create a key to start integrating with Neural Nexus.
                       </p>
                       <AnimatedButton
                         variant="primary"
                         size="sm"
-                        onClick={() => {
-                          toast.success("Creating new API key...");
-                          // In a real app, this would call an API endpoint to create a new key
+                        onClick={async () => {
+                          try {
+                            toast.loading("Creating new API key...");
+                            
+                            // Call the API to create a new key
+                            const response = await fetch('/api/user/api-keys', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json'
+                              },
+                              body: JSON.stringify({
+                                name: 'API Key',
+                                keyType: 'development'
+                              })
+                            });
+                            
+                            if (!response.ok) {
+                              const errorData = await response.json();
+                              throw new Error(errorData.error || 'Failed to create API key');
+                            }
+                            
+                            const data = await response.json();
+                            
+                            // Show success message
+                            toast.dismiss();
+                            toast.success("API key created successfully!");
+                            
+                            // Show a dialog with the new API key
+                            const confirmed = window.confirm(`Your new API key has been created. Copy it now as it won't be shown again:\n\n${data.apiKey.key}\n\nClick OK after you've copied it.`);
+                            
+                            // Refresh the API keys list
+                            fetchApiKeys();
+                            
+                          } catch (error: any) {
+                            toast.dismiss();
+                            toast.error(error.message || 'Failed to create API key');
+                          }
                         }}
                       >
                         <Key className="h-4 w-4 mr-2" />
-                        Create Your First API Key
+                        Create API Key
                       </AnimatedButton>
                     </div>
                   )}
@@ -1051,12 +1321,148 @@ export default function DashboardPage() {
                       <p className="text-sm text-gray-400 my-2">
                         Check out our comprehensive API documentation to learn how to integrate Neural Nexus models into your applications.
                       </p>
-                      <div className="bg-gray-800/50 p-4 rounded-md my-4">
-                        <p className="text-sm font-medium mb-2">Authentication Example:</p>
+
+                      {/* API Tabs */}
+                      <div className="border-b border-gray-800 mb-4">
+                        <div className="flex overflow-x-auto scrollbar-hide -mx-2">
+                          <button className="px-4 py-2 text-sm text-purple-400 border-b-2 border-purple-500 mx-2 whitespace-nowrap">
+                            Getting Started
+                          </button>
+                          <button className="px-4 py-2 text-sm text-gray-400 hover:text-gray-300 mx-2 whitespace-nowrap">
+                            Models API
+                          </button>
+                          <button className="px-4 py-2 text-sm text-gray-400 hover:text-gray-300 mx-2 whitespace-nowrap">
+                            Inference API
+                          </button>
+                          <button className="px-4 py-2 text-sm text-gray-400 hover:text-gray-300 mx-2 whitespace-nowrap">
+                            Training API
+                          </button>
+                          <button className="px-4 py-2 text-sm text-gray-400 hover:text-gray-300 mx-2 whitespace-nowrap">
+                            User API
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* API Key Information */}
+                      <div className="space-y-6">
+                        {/* Authentication */}
+                        <div>
+                          <h4 className="text-md font-medium mb-2">Authentication</h4>
+                          <div className="bg-gray-800/50 p-4 rounded-md">
+                            <p className="text-sm mb-2">All API requests require authentication using your API key in the header:</p>
                         <pre className="bg-gray-900 p-3 rounded-md text-xs overflow-x-auto">
                           <code>
-                            // JavaScript example<br/>
                             const response = await fetch('https://api.neuralnexus.ai/v1/models', &#123;<br/>
+                                &nbsp;&nbsp;headers: &#123;<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;'Authorization': 'Bearer YOUR_API_KEY',<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;'Content-Type': 'application/json'<br/>
+                                &nbsp;&nbsp;&#125;<br/>
+                                &#125;);
+                              </code>
+                            </pre>
+                            <div className="mt-3 p-2 bg-amber-900/20 border border-amber-800/30 rounded-md">
+                              <p className="text-xs text-amber-300 flex items-start gap-2">
+                                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                                <span>Keep your API keys secure! Never expose them in client-side code or public repositories. Use environment variables and server-side code to protect your keys.</span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* API Key Types */}
+                        <div>
+                          <h4 className="text-md font-medium mb-2">API Key Types</h4>
+                          <div className="bg-gray-800/50 p-4 rounded-md">
+                            <p className="text-sm mb-3">Neural Nexus offers different API key types based on your usage needs:</p>
+                            
+                            <div className="space-y-3">
+                              <div className="flex items-start gap-3">
+                                <div className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs flex items-center justify-center mt-0.5">test</div>
+                                <div>
+                                  <p className="text-sm font-medium">Test Keys (nxt_)</p>
+                                  <p className="text-xs text-gray-400">For testing your integration during development</p>
+                                  <p className="text-xs text-blue-400 mt-1">1,000 requests/month limit</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-start gap-3">
+                                <div className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs flex items-center justify-center mt-0.5">dev</div>
+                                <div>
+                                  <p className="text-sm font-medium">Development Keys (nnd_)</p>
+                                  <p className="text-xs text-gray-400">For development environments and staging</p>
+                                  <p className="text-xs text-purple-400 mt-1">5,000 requests/month limit</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-start gap-3">
+                                <div className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs flex items-center justify-center mt-0.5">train</div>
+                                <div>
+                                  <p className="text-sm font-medium">Training Keys (ntr_)</p>
+                                  <p className="text-xs text-gray-400">For fine-tuning models and training operations</p>
+                                  <p className="text-xs text-amber-400 mt-1">10,000 requests/month limit</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-start gap-3">
+                                <div className="px-2 py-1 bg-indigo-500/20 text-indigo-400 rounded-full text-xs flex items-center justify-center mt-0.5">deploy</div>
+                                <div>
+                                  <p className="text-sm font-medium">Deployment Keys (ndp_)</p>
+                                  <p className="text-xs text-gray-400">For UAT and pre-production environments</p>
+                                  <p className="text-xs text-indigo-400 mt-1">50,000 requests/month limit</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-start gap-3">
+                                <div className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs flex items-center justify-center mt-0.5">prod</div>
+                                <div>
+                                  <p className="text-sm font-medium">Production Keys (npr_)</p>
+                                  <p className="text-xs text-gray-400">For production applications with SLA guarantees</p>
+                                  <p className="text-xs text-green-400 mt-1">100,000 requests/month limit</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* API Key Management */}
+                        <div>
+                          <h4 className="text-md font-medium mb-2">API Key Management</h4>
+                          <div className="bg-gray-800/50 p-4 rounded-md">
+                            <p className="text-sm mb-3">Best practices for managing your API keys:</p>
+                            <ul className="list-disc list-inside space-y-2 text-xs text-gray-300">
+                              <li>Create different keys for different environments (development, staging, production)</li>
+                              <li>Rotate keys regularly for enhanced security</li>
+                              <li>Delete unused keys to minimize security exposure</li>
+                              <li>Monitor key usage to detect any unauthorized access</li>
+                              <li>Use least privilege principle - only enable permissions your application needs</li>
+                            </ul>
+                            <div className="mt-3">
+                              <p className="text-xs text-gray-400">For detailed API key management instructions, visit our <a href="/docs/api-keys" className="text-purple-400 hover:underline">API Key Security Guide</a>.</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Models API */}
+                        <div>
+                          <h4 className="text-md font-medium mb-2">Models API</h4>
+                          <p className="text-sm text-gray-400 mb-3">
+                            The Models API lets you list, search, and get details about available models.
+                          </p>
+                          <div className="space-y-3">
+                            <div className="bg-gray-800/50 p-3 rounded-md">
+                              <p className="text-sm font-medium text-purple-400 mb-1">List Models</p>
+                              <p className="text-xs text-gray-400 mb-2">GET /v1/models</p>
+                              <pre className="bg-gray-900 p-2 rounded-md text-xs overflow-x-auto">
+                                <code>
+                                  // Get all available models<br/>
+                                  const models = await fetch('https://api.neuralnexus.ai/v1/models', &#123;<br/>
+                                  &nbsp;&nbsp;headers: &#123;<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;'Authorization': 'Bearer YOUR_API_KEY'<br/>
+                                  &nbsp;&nbsp;&#125;<br/>
+                                  &#125;);<br/>
+                                  <br/>
+                                  // Filter by category<br/>
+                                  const nlpModels = await fetch('https://api.neuralnexus.ai/v1/models?category=nlp', &#123;<br/>
                             &nbsp;&nbsp;headers: &#123;<br/>
                             &nbsp;&nbsp;&nbsp;&nbsp;'Authorization': 'Bearer YOUR_API_KEY'<br/>
                             &nbsp;&nbsp;&#125;<br/>
@@ -1064,69 +1470,359 @@ export default function DashboardPage() {
                           </code>
                         </pre>
                       </div>
-                      <Link href="/api" className="text-purple-400 hover:text-purple-300 text-sm flex items-center">
+
+                            <div className="bg-gray-800/50 p-3 rounded-md">
+                              <p className="text-sm font-medium text-purple-400 mb-1">Get Model Details</p>
+                              <p className="text-xs text-gray-400 mb-2">GET /v1/models/{'{model_id}'}</p>
+                              <pre className="bg-gray-900 p-2 rounded-md text-xs overflow-x-auto">
+                                <code>
+                                  // Get details for a specific model<br/>
+                                  const modelDetails = await fetch('https://api.neuralnexus.ai/v1/models/nn-7b-chat', &#123;<br/>
+                                  &nbsp;&nbsp;headers: &#123;<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;'Authorization': 'Bearer YOUR_API_KEY'<br/>
+                                  &nbsp;&nbsp;&#125;<br/>
+                                  &#125;);
+                                </code>
+                              </pre>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Inference API */}
+                        <div>
+                          <h4 className="text-md font-medium mb-2">Inference API</h4>
+                          <p className="text-sm text-gray-400 mb-3">
+                            The Inference API allows you to run models on your inputs and get predictions in real-time.
+                          </p>
+                          <div className="space-y-3">
+                            <div className="bg-gray-800/50 p-3 rounded-md">
+                              <p className="text-sm font-medium text-purple-400 mb-1">Text Generation</p>
+                              <p className="text-xs text-gray-400 mb-2">POST /v1/completions</p>
+                              <pre className="bg-gray-900 p-2 rounded-md text-xs overflow-x-auto">
+                                <code>
+                                  await fetch('https://api.neuralnexus.ai/v1/completions', &#123;<br/>
+                                  &nbsp;&nbsp;method: 'POST',<br/>
+                                  &nbsp;&nbsp;headers: &#123;<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;'Authorization': 'Bearer YOUR_API_KEY',<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;'Content-Type': 'application/json'<br/>
+                                  &nbsp;&nbsp;&#125;,<br/>
+                                  &nbsp;&nbsp;body: JSON.stringify(&#123;<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;model: 'nn-7b-chat',<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;prompt: 'What are neural networks?',<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;max_tokens: 100,<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;temperature: 0.7<br/>
+                                  &nbsp;&nbsp;&#125;)<br/>
+                                  &#125;);
+                                </code>
+                              </pre>
+                            </div>
+
+                            <div className="bg-gray-800/50 p-3 rounded-md">
+                              <p className="text-sm font-medium text-purple-400 mb-1">Chat Completions</p>
+                              <p className="text-xs text-gray-400 mb-2">POST /v1/chat/completions</p>
+                              <pre className="bg-gray-900 p-2 rounded-md text-xs overflow-x-auto">
+                                <code>
+                                  await fetch('https://api.neuralnexus.ai/v1/chat/completions', &#123;<br/>
+                                  &nbsp;&nbsp;method: 'POST',<br/>
+                                  &nbsp;&nbsp;headers: &#123;<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;'Authorization': 'Bearer YOUR_API_KEY',<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;'Content-Type': 'application/json'<br/>
+                                  &nbsp;&nbsp;&#125;,<br/>
+                                  &nbsp;&nbsp;body: JSON.stringify(&#123;<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;model: 'nn-7b-chat',<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;messages: [<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#123; role: 'system', content: 'You are a helpful assistant.' &#125;,<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#123; role: 'user', content: 'Hello, who are you?' &#125;<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;]<br/>
+                                  &nbsp;&nbsp;&#125;)<br/>
+                                  &#125;);
+                                </code>
+                              </pre>
+                            </div>
+
+                            <div className="bg-gray-800/50 p-3 rounded-md">
+                              <p className="text-sm font-medium text-purple-400 mb-1">Image Generation</p>
+                              <p className="text-xs text-gray-400 mb-2">POST /v1/images/generations</p>
+                              <pre className="bg-gray-900 p-2 rounded-md text-xs overflow-x-auto">
+                                <code>
+                                  await fetch('https://api.neuralnexus.ai/v1/images/generations', &#123;<br/>
+                                  &nbsp;&nbsp;method: 'POST',<br/>
+                                  &nbsp;&nbsp;headers: &#123;<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;'Authorization': 'Bearer YOUR_API_KEY',<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;'Content-Type': 'application/json'<br/>
+                                  &nbsp;&nbsp;&#125;,<br/>
+                                  &nbsp;&nbsp;body: JSON.stringify(&#123;<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;model: 'nn-diffusion-xl',<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;prompt: 'A futuristic city with flying cars',<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;n: 1,<br/>
+                                  &nbsp;&nbsp;&nbsp;&nbsp;size: '1024x1024'<br/>
+                                  &nbsp;&nbsp;&#125;)<br/>
+                                  &#125;);
+                                </code>
+                              </pre>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Rate Limits and Quotas */}
+                        <div>
+                          <h4 className="text-md font-medium mb-2">Rate Limits & Quotas</h4>
+                          <div className="bg-gray-800/50 p-4 rounded-md">
+                            <p className="text-sm mb-3">API key usage is subject to the following limits:</p>
+                            
+                            <table className="w-full text-xs">
+                              <thead className="text-gray-400">
+                                <tr>
+                                  <th className="py-2 text-left">Key Type</th>
+                                  <th className="py-2 text-left">Monthly Quota</th>
+                                  <th className="py-2 text-left">Rate Limit</th>
+                                  <th className="py-2 text-left">Burst Limit</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-700">
+                                <tr>
+                                  <td className="py-2">Test</td>
+                                  <td className="py-2">1,000 requests</td>
+                                  <td className="py-2">10 req/min</td>
+                                  <td className="py-2">20 req/min</td>
+                                </tr>
+                                <tr>
+                                  <td className="py-2">Development</td>
+                                  <td className="py-2">5,000 requests</td>
+                                  <td className="py-2">60 req/min</td>
+                                  <td className="py-2">100 req/min</td>
+                                </tr>
+                                <tr>
+                                  <td className="py-2">Training</td>
+                                  <td className="py-2">10,000 requests</td>
+                                  <td className="py-2">120 req/min</td>
+                                  <td className="py-2">200 req/min</td>
+                                </tr>
+                                <tr>
+                                  <td className="py-2">Deployment</td>
+                                  <td className="py-2">50,000 requests</td>
+                                  <td className="py-2">300 req/min</td>
+                                  <td className="py-2">500 req/min</td>
+                                </tr>
+                                <tr>
+                                  <td className="py-2">Production</td>
+                                  <td className="py-2">100,000 requests</td>
+                                  <td className="py-2">600 req/min</td>
+                                  <td className="py-2">1,000 req/min</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            
+                            <p className="text-xs text-gray-400 mt-3">
+                              When you exceed your rate limit, requests will return a 429 Too Many Requests status code. 
+                              When you exceed your monthly quota, requests will return a 403 Forbidden status code with details about upgrading.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Error Handling */}
+                        <div>
+                          <h4 className="text-md font-medium mb-2">Error Handling</h4>
+                          <div className="bg-gray-800/50 p-4 rounded-md">
+                            <p className="text-sm mb-3">API responses use standard HTTP status codes and include detailed error messages:</p>
+                            
+                            <pre className="bg-gray-900 p-2 rounded-md text-xs overflow-x-auto">
+                              <code>
+                                &#123;<br/>
+                                &nbsp;&nbsp;"error": &#123;<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;"message": "Authentication failed. Invalid API key provided.",<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;"type": "authentication_error",<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;"code": "invalid_api_key",<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;"status": 401,<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;"request_id": "req_12345"<br/>
+                                &nbsp;&nbsp;&#125;<br/>
+                                &#125;
+                              </code>
+                            </pre>
+                            
+                            <div className="mt-3 space-y-2">
+                              <p className="text-xs text-gray-400">Common error status codes:</p>
+                              <ul className="list-disc list-inside space-y-1 text-xs text-gray-300">
+                                <li><span className="text-red-400">400</span> - Bad Request (malformed request or invalid parameters)</li>
+                                <li><span className="text-red-400">401</span> - Unauthorized (missing or invalid API key)</li>
+                                <li><span className="text-red-400">403</span> - Forbidden (valid API key but insufficient permissions)</li>
+                                <li><span className="text-red-400">404</span> - Not Found (requested resource doesn't exist)</li>
+                                <li><span className="text-red-400">429</span> - Too Many Requests (rate limit exceeded)</li>
+                                <li><span className="text-red-400">500</span> - Internal Server Error (something went wrong on our end)</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <Link href="/docs/api" className="text-purple-400 hover:text-purple-300 text-sm flex items-center">
                         View full documentation
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                         </svg>
                       </Link>
+                      </div>
                     </div>
                   </div>
                 </AnimatedCard>
                 
-                {/* Client Secret & Callback URLs */}
+                {/* Create New Key Dialog */}
                 <AnimatedCard className="p-6">
                   <div className="flex items-start gap-4">
-                    <div className="p-2 bg-yellow-500/10 rounded-lg">
-                      <Lock className="h-5 w-5 text-yellow-400" />
+                    <div className="p-2 bg-green-500/10 rounded-lg">
+                      <Plus className="h-5 w-5 text-green-400" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-medium">Client Secret & Callback URLs</h3>
+                      <h3 className="text-lg font-medium">Create New API Key</h3>
                       <p className="text-sm text-gray-400 my-2">
-                        For OAuth applications, use the client secret and configure your callback URLs below.
+                        Choose the type of API key you want to create based on your usage needs.
                       </p>
                       
-                      <div className="space-y-4 mt-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-400 mb-1">Client Secret</label>
-                          <div className="flex items-center">
-                            <p className="text-sm font-mono bg-gray-800 px-3 py-2 rounded flex-1">
-                              nn_client_secret_k4j5h6g7f8d9s0a1...</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
                             <button 
-                              className="ml-2 p-1 hover:bg-gray-800 rounded-md transition-colors"
-                              aria-label="Copy client secret"
-                            >
-                              <Copy className="h-4 w-4 text-gray-400" />
-                            </button>
+                          className="p-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 rounded-lg text-left transition-colors"
+                          onClick={async () => {
+                            try {
+                              toast.loading("Creating test API key...");
+                              
+                              // Call the API to create a new key
+                              const response = await fetch('/api/user/api-keys', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                  name: 'Test API Key',
+                                  keyType: 'test'
+                                })
+                              });
+                              
+                              if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.error || 'Failed to create API key');
+                              }
+                              
+                              const data = await response.json();
+                              
+                              // Show success message
+                              toast.dismiss();
+                              toast.success("Test API key created successfully!");
+                              
+                              // Show a dialog with the new API key
+                              const confirmed = window.confirm(`Your new test API key has been created. Copy it now as it won't be shown again:\n\n${data.apiKey.key}\n\nClick OK after you've copied it.`);
+                              
+                              // Refresh the API keys list
+                              fetchApiKeys();
+                              
+                            } catch (error: any) {
+                              toast.dismiss();
+                              toast.error(error.message || 'Failed to create API key');
+                            }
+                          }}
+                        >
+                          <h4 className="font-medium mb-1">Test Key</h4>
+                          <p className="text-xs text-gray-400">For testing your integration</p>
+                          <div className="mt-2 text-xs">
+                            <span className="inline-block px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full">1,000 requests/month</span>
                           </div>
-                        </div>
+                        </button>
                         
-                        <div>
-                          <label className="block text-sm font-medium text-gray-400 mb-1">Callback URLs</label>
-                          <div className="flex items-center">
-                            <input 
-                              type="text" 
-                              value="https://myapp.example.com/callback"
-                              placeholder="Enter callback URL"
-                              className="bg-gray-800/80 border border-gray-700 rounded-lg py-2 px-3 text-sm w-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            />
                             <button 
-                              className="ml-2 p-2 bg-purple-500 hover:bg-purple-600 rounded-md transition-colors"
-                              aria-label="Add callback URL"
-                            >
-                              <Plus className="h-4 w-4 text-white" />
-                            </button>
+                          className="p-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 rounded-lg text-left transition-colors"
+                          onClick={async () => {
+                            try {
+                              toast.loading("Creating development API key...");
+                              
+                              // Call the API to create a new key
+                              const response = await fetch('/api/user/api-keys', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                  name: 'Development API Key',
+                                  keyType: 'development'
+                                })
+                              });
+                              
+                              if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.error || 'Failed to create API key');
+                              }
+                              
+                              const data = await response.json();
+                              
+                              // Show success message
+                              toast.dismiss();
+                              toast.success("Development API key created successfully!");
+                              
+                              // Show a dialog with the new API key
+                              const confirmed = window.confirm(`Your new development API key has been created. Copy it now as it won't be shown again:\n\n${data.apiKey.key}\n\nClick OK after you've copied it.`);
+                              
+                              // Refresh the API keys list
+                              fetchApiKeys();
+                              
+                            } catch (error: any) {
+                              toast.dismiss();
+                              toast.error(error.message || 'Failed to create API key');
+                            }
+                          }}
+                        >
+                          <h4 className="font-medium mb-1">Development Key</h4>
+                          <p className="text-xs text-gray-400">For development environments</p>
+                          <div className="mt-2 text-xs">
+                            <span className="inline-block px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-full">5,000 requests/month</span>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Add multiple callback URLs for your OAuth application
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4">
-                        <AnimatedButton variant="outline" size="sm">
-                          Save Settings
-                        </AnimatedButton>
+                        </button>
+                        
+                        <button
+                          className="p-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 rounded-lg text-left transition-colors"
+                          onClick={async () => {
+                            try {
+                              toast.loading("Creating production API key...");
+                              
+                              // Call the API to create a new key
+                              const response = await fetch('/api/user/api-keys', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                  name: 'Production API Key',
+                                  keyType: 'production'
+                                })
+                              });
+                              
+                              if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.error || 'Failed to create API key');
+                              }
+                              
+                              const data = await response.json();
+                              
+                              // Show success message
+                              toast.dismiss();
+                              toast.success("Production API key created successfully!");
+                              
+                              // Show a dialog with the new API key
+                              const confirmed = window.confirm(`Your new production API key has been created. Copy it now as it won't be shown again:\n\n${data.apiKey.key}\n\nClick OK after you've copied it.`);
+                              
+                              // Refresh the API keys list
+                              fetchApiKeys();
+                              
+                            } catch (error: any) {
+                              toast.dismiss();
+                              toast.error(error.message || 'Failed to create API key');
+                            }
+                          }}
+                        >
+                          <h4 className="font-medium mb-1">Production Key</h4>
+                          <p className="text-xs text-gray-400">For production use</p>
+                          <div className="mt-2 text-xs">
+                            <span className="inline-block px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">100,000 requests/month</span>
+                          </div>
+                        </button>
                       </div>
                     </div>
                   </div>
