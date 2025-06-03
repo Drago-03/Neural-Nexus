@@ -23,7 +23,7 @@ const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
 }) => {
   // Modal steps: warning -> export -> confirmation -> email_sent
   const [step, setStep] = useState<'warning' | 'export' | 'confirmation' | 'email_sent'>('warning');
-  const [confirmEmail, setConfirmEmail] = useState('');
+  const [confirmText, setConfirmText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   
   // Processing states for different export options
@@ -37,12 +37,12 @@ const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
   const [dataExported, setDataExported] = useState(false);
   
   // Input ref for focus management
-  const emailInputRef = useRef<HTMLInputElement>(null);
+  const confirmInputRef = useRef<HTMLInputElement>(null);
   
   // Reset modal state when closed
   const handleClose = () => {
     setStep('warning');
-    setConfirmEmail('');
+    setConfirmText('');
     setIsProcessing(false);
     setReportGenerated(false);
     setApiKeysExported(false);
@@ -152,10 +152,10 @@ const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
   // Handle proceeding to confirmation step
   const handleProceedToConfirmation = () => {
     setStep('confirmation');
-    // Focus the email input when it becomes visible
+    // Focus the confirmation input when it becomes visible
     setTimeout(() => {
-      if (emailInputRef.current) {
-        emailInputRef.current.focus();
+      if (confirmInputRef.current) {
+        confirmInputRef.current.focus();
       }
     }, 100);
   };
@@ -163,7 +163,7 @@ const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
   // Handle final delete confirmation - now sends an email instead of immediately deleting
   const handleConfirmDelete = async () => {
     if (isProcessing) return;
-    if (confirmEmail !== userData?.email) return;
+    if (confirmText !== "sudo delete my account") return;
     
     try {
       setIsProcessing(true);
@@ -371,7 +371,7 @@ const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                 
                 <h2 className="text-xl font-bold text-center mb-2">Final Confirmation</h2>
                 <p className="text-gray-400 text-center mb-6">
-                  Please enter your registered email address below to confirm:
+                  To confirm deletion, please type the following:
                 </p>
                 
                 <div className="space-y-4 mb-6">
@@ -382,16 +382,16 @@ const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                   </div>
                   
                   <div>
-                    <label htmlFor="confirm-email" className="block text-sm font-medium text-gray-400 mb-1">
-                      Your registered email address
+                    <label htmlFor="confirm-text" className="block text-sm font-medium text-gray-400 mb-1">
+                      Type <span className="font-mono font-bold text-red-400">sudo delete my account</span> to confirm
                     </label>
                     <input
-                      ref={emailInputRef}
-                      id="confirm-email"
-                      type="email"
-                      placeholder="Enter your registered email address"
-                      value={confirmEmail}
-                      onChange={(e) => setConfirmEmail(e.target.value)}
+                      ref={confirmInputRef}
+                      id="confirm-text"
+                      type="text"
+                      placeholder="sudo delete my account"
+                      value={confirmText}
+                      onChange={(e) => setConfirmText(e.target.value)}
                       className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
                     />
                   </div>
@@ -406,9 +406,9 @@ const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                   </button>
                   <button
                     onClick={handleConfirmDelete}
-                    disabled={confirmEmail !== userData?.email || isProcessing}
+                    disabled={confirmText !== "sudo delete my account" || isProcessing}
                     className={`flex-1 px-4 py-2 rounded-lg transition-colors text-white font-medium flex items-center justify-center ${
-                      confirmEmail === userData?.email && !isProcessing
+                      confirmText === "sudo delete my account" && !isProcessing
                         ? 'bg-red-600 hover:bg-red-700'
                         : 'bg-gray-700 cursor-not-allowed'
                     }`}

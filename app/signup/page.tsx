@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import AuthLayout from '@/src/components/auth/AuthLayout';
 import { Input } from '@/src/components/ui/Input';
 import { Button } from '@/src/components/ui/Button';
-import { Mail, Lock, Github, AlertCircle, User, CheckCircle, XCircle, Info } from 'lucide-react';
+import { Mail, Lock, Github, AlertCircle, User, CheckCircle, XCircle, Info, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useSupabase } from '@/providers/SupabaseProvider';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -62,6 +62,8 @@ export default function SignUpPage() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Rate limiting state
   const [rateLimitState, setRateLimitState] = useState<RateLimitState>({
@@ -159,12 +161,13 @@ export default function SignUpPage() {
         validating: false 
       });
 
-      // Also validate confirm password if it's been touched
+      // Also validate confirm password if it's been touched and has a value
       if (fields.confirmPassword.touched && fields.confirmPassword.value) {
-        const matchResult = checkPasswordsMatch(value, fields.confirmPassword.value);
+        // Check if passwords match
+        const passwordsMatch = value === fields.confirmPassword.value;
         updateField('confirmPassword', { 
-          valid: matchResult.valid, 
-          error: matchResult.valid ? undefined : matchResult.message,
+          valid: passwordsMatch, 
+          error: passwordsMatch ? undefined : "Passwords don't match, check again!",
           validating: false 
         });
       }
@@ -181,10 +184,17 @@ export default function SignUpPage() {
         return;
       }
       
-      const result = checkPasswordsMatch(fields.password.value, value);
+      // Check if passwords match
+      const passwordsMatch = fields.password.value === value;
+      console.log('Password validation:', {
+        password: fields.password.value,
+        confirmPassword: value,
+        match: passwordsMatch
+      });
+      
       updateField('confirmPassword', { 
-        valid: result.valid, 
-        error: result.valid ? undefined : result.message,
+        valid: passwordsMatch, 
+        error: passwordsMatch ? undefined : "Passwords don't match, check again!",
         validating: false 
       });
     }, 300)).current,
@@ -241,9 +251,19 @@ export default function SignUpPage() {
       setError(null);
     }
 
-    // Use the appropriate debounced validation function
-    if (name in debouncedValidations) {
-      debouncedValidations[name as keyof typeof debouncedValidations](value);
+    // Special handling for confirmPassword to ensure immediate validation
+    if (name === 'confirmPassword') {
+      const passwordsMatch = fields.password.value === value;
+      updateField('confirmPassword', {
+        valid: passwordsMatch,
+        error: passwordsMatch ? undefined : "Passwords don't match, check again!",
+        validating: false
+      });
+    } else {
+      // Use the appropriate debounced validation function
+      if (name in debouncedValidations) {
+        debouncedValidations[name as keyof typeof debouncedValidations](value);
+      }
     }
   };
 
@@ -611,12 +631,26 @@ export default function SignUpPage() {
           <div>
             <Input
               label="Password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               name="password"
               value={fields.password.value}
               onChange={handleInputChange}
               leftIcon={<Lock className="h-5 w-5" />}
-              rightIcon={getStatusIcon('password')}
+              rightIcon={
+                <div className="flex space-x-2">
+                  {fields.password.touched && getStatusIcon('password')}
+                  <button
+                    type="button"
+                    className="text-gray-400 hover:text-gray-300"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowPassword(!showPassword);
+                    }}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              }
               placeholder="Create a password (min. 8 characters)"
               error={fields.password.touched ? fields.password.error : undefined}
               required
@@ -629,19 +663,35 @@ export default function SignUpPage() {
             )}
           </div>
 
-          <Input
-            label="Confirm Password"
-            type="password"
-            name="confirmPassword"
-            value={fields.confirmPassword.value}
-            onChange={handleInputChange}
-            leftIcon={<Lock className="h-5 w-5" />}
-            rightIcon={getStatusIcon('confirmPassword')}
-            placeholder="Confirm your password"
-            error={fields.confirmPassword.touched ? fields.confirmPassword.error : undefined}
-            required
-            autoComplete="new-password"
-          />
+          <div>
+            <Input
+              label="Confirm Password"
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              value={fields.confirmPassword.value}
+              onChange={handleInputChange}
+              leftIcon={<Lock className="h-5 w-5" />}
+              rightIcon={
+                <div className="flex space-x-2">
+                  {fields.confirmPassword.touched && getStatusIcon('confirmPassword')}
+                  <button
+                    type="button"
+                    className="text-gray-400 hover:text-gray-300"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowConfirmPassword(!showConfirmPassword);
+                    }}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              }
+              placeholder="Confirm your password"
+              error={fields.confirmPassword.touched ? fields.confirmPassword.error : undefined}
+              required
+              autoComplete="new-password"
+            />
+          </div>
 
           <div className="flex items-center mt-4">
             <input

@@ -176,7 +176,7 @@ export const checkPasswordsMatch = (password: string, confirmPassword: string): 
     return { valid: false, message: "Please confirm your password!" };
   }
   
-  // Check if passwords match
+  // Check if passwords match - use exact string comparison
   if (password !== confirmPassword) {
     return { valid: false, message: "Passwords don't match, check again!" };
   }
