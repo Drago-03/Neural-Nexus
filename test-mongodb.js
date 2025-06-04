@@ -26,10 +26,18 @@ try {
 }
 
 async function testConnection() {
-  // Basic minimal options
+  // Use updated connection options matching lib/mongodb.ts
   const client = new MongoClient(uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+    ssl: true,
+    tls: true,
+    tlsAllowInvalidCertificates: true,
+    directConnection: false,
+    retryWrites: true,
+    retryReads: true,
+    maxPoolSize: 10,
+    minPoolSize: 5,
+    connectTimeoutMS: 30000,
+    socketTimeoutMS: 45000
   });
 
   try {

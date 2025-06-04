@@ -27,6 +27,7 @@ import {
   checkRateLimit
 } from '@/lib/validation';
 import ReCAPTCHA from 'react-google-recaptcha';
+import { UsernameSuggestions } from '@/src/components/ui/UsernameSuggestions';
 
 // Import toast dynamically to avoid SSR issues
 const importToast = () => import('react-hot-toast').then(mod => mod.toast);
@@ -73,6 +74,13 @@ export default function SignUpPage() {
     blockExpiry: 0
   });
 
+  // Add state for username suggestions
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+
+  // Add a state for tooltip text
+  const [usernameTooltipText, setUsernameTooltipText] = useState("First 3 are based on your name, last 3 are tech/gaming inspired");
+
   const { supabase } = useSupabase();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -105,11 +113,11 @@ export default function SignUpPage() {
 
       // Then check if username is already taken
       try {
-        // This would be a real API call in production
-        // For now, just simulate a check
-        const isTaken = ['admin', 'root', 'system', 'neural', 'nexus'].includes(value.toLowerCase());
+        // Call our API to check if username is available
+        const response = await fetch(`/api/username-check?username=${encodeURIComponent(value)}`);
+        const data = await response.json();
 
-        if (isTaken) {
+        if (!data.available) {
           updateField('username', { 
             valid: false, 
             error: "This username is already taken, try another one!", 
@@ -119,6 +127,7 @@ export default function SignUpPage() {
           updateField('username', { valid: true, error: undefined, validating: false });
         }
       } catch (err) {
+        console.error('Error checking username availability:', err);
         // If API call fails, just validate the format
         updateField('username', { valid: result.valid, error: result.message, validating: false });
       }
@@ -239,6 +248,54 @@ export default function SignUpPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
+    // Special handling for username field to sanitize input and prevent emojis
+    if (name === 'username') {
+      // Only allow alphanumeric, periods, underscores, and hyphens
+      const sanitizedValue = value.replace(/[^a-zA-Z0-9._-]/g, '');
+      
+      // If the sanitized value is different from the input value, it means invalid characters were entered
+      if (sanitizedValue !== value) {
+        // Set field with sanitized value and show error about invalid characters
+        updateField('username', {
+          value: sanitizedValue,
+          touched: true,
+          validating: false,
+          valid: false,
+          error: 'Username can only contain letters, numbers, periods, underscores, and hyphens'
+        });
+        
+        // Clear general error
+        if (error && error.field === 'username') {
+          setError(null);
+        }
+        
+        // Use the appropriate debounced validation function with sanitized value
+        if (sanitizedValue) {
+          debouncedValidations.username(sanitizedValue);
+        }
+        
+        return;
+      }
+      
+      // Update the field with sanitized value
+      updateField('username', {
+        value: sanitizedValue,
+        touched: true,
+        validating: true
+      });
+      
+      // Clear general error
+      if (error && error.field === 'username') {
+        setError(null);
+      }
+      
+      // Use the appropriate debounced validation function
+      debouncedValidations.username(sanitizedValue);
+      
+      return;
+    }
+
+    // Normal handling for other fields
     // Update the field value and mark as touched and validating
     updateField(name as keyof typeof fields, {
       value,
@@ -538,6 +595,110 @@ export default function SignUpPage() {
       <XCircle className="h-5 w-5 text-red-500" />;
   };
 
+  // Update the fetchUsernameSuggestions function to handle 6 suggestions
+  const fetchUsernameSuggestions = async () => {
+    if (!fields.firstName.value) return;
+    
+    setIsLoadingSuggestions(true);
+    setUsernameSuggestions([]);
+    
+    try {
+      const response = await fetch('/api/username-check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          firstName: fields.firstName.value,
+          lastName: fields.lastName.value || ''
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch username suggestions');
+      }
+      
+      const data = await response.json();
+      
+      if (data.suggestions && data.suggestions.length) {
+        setUsernameSuggestions(data.suggestions);
+        setUsernameTooltipText("First 3 are based on your name, last 3 are tech/gaming inspired");
+      } else {
+        // Generate fallback suggestions client-side if the API fails
+        let fallbackSuggestions = [];
+        
+        // Sanitize function to ensure no emojis
+        const sanitizeUsername = (username: string): string => {
+          return username.replace(/[^\w_]/g, ''); // Only allow alphanumeric and underscore
+        };
+        
+        // Name-based suggestions (3)
+        const firstName = fields.firstName.value.toLowerCase();
+        const lastName = fields.lastName.value ? fields.lastName.value.toLowerCase() : '';
+        
+        fallbackSuggestions.push(sanitizeUsername(firstName + (lastName ? lastName.substring(0, 1) : '')));
+        fallbackSuggestions.push(sanitizeUsername(firstName + (lastName || '') + Math.floor(Math.random() * 999)));
+        fallbackSuggestions.push(sanitizeUsername((firstName.substring(0, 1) + (lastName || '')).toLowerCase()));
+        
+        // Tech/Gaming suggestions (3)
+        const techTerms = ['dev', 'tech', 'code', 'ai', 'web3', 'crypto', 'pixel'];
+        const gamingTerms = ['gamer', 'player', 'elite', 'pro', 'legend', 'champion', 'win'];
+        const getRandomItem = (arr: string[]): string => arr[Math.floor(Math.random() * arr.length)];
+        
+        fallbackSuggestions.push(sanitizeUsername(firstName + getRandomItem(techTerms)));
+        fallbackSuggestions.push(sanitizeUsername(getRandomItem(gamingTerms) + firstName));
+        fallbackSuggestions.push(sanitizeUsername(firstName + getRandomItem(gamingTerms) + Math.floor(Math.random() * 99)));
+        
+        setUsernameSuggestions(fallbackSuggestions);
+        setUsernameTooltipText("Generated locally - first 3 name-based, last 3 tech/gaming vibes");
+      }
+    } catch (error) {
+      console.error('Error fetching username suggestions:', error);
+      setUsernameTooltipText("Something's off with our suggestion engine right now");
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+  
+  // Add function to handle selecting a suggestion
+  const handleSelectSuggestion = (username: string) => {
+    updateField('username', {
+      value: username,
+      touched: true,
+      validating: true
+    });
+    
+    // Validate the selected username
+    debouncedValidations.username(username);
+    
+    // Remove this suggestion from the list
+    setUsernameSuggestions(prev => prev.filter(s => s !== username));
+  };
+  
+  // Fetch suggestions when first name or last name changes
+  useEffect(() => {
+    // Only fetch if first name has a decent length
+    if (fields.firstName.value && fields.firstName.value.length >= 2) {
+      // Debounce to avoid too many requests while typing
+      const timer = setTimeout(() => {
+        fetchUsernameSuggestions();
+      }, 600); // Wait 600ms after typing stops
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fields.firstName.value, fields.lastName.value]);
+
+  // Clear suggestions when username field is manually changed
+  useEffect(() => {
+    // If user is typing their own username, hide suggestions
+    if (fields.username.touched && fields.username.value && usernameSuggestions.length > 0) {
+      // Only hide suggestions if the current username doesn't match any suggestion
+      if (!usernameSuggestions.includes(fields.username.value)) {
+        setUsernameSuggestions([]);
+      }
+    }
+  }, [fields.username.value, fields.username.touched]);
+
   // Show loading state until client-side code is ready
   if (!isClient || isLoading) {
     return (
@@ -613,6 +774,28 @@ export default function SignUpPage() {
             required
             autoComplete="username"
           />
+
+          {/* Add username suggestions with smooth animation */}
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ 
+              opacity: fields.firstName.value && fields.firstName.value.length >= 2 ? 1 : 0,
+              height: fields.firstName.value && fields.firstName.value.length >= 2 ? 'auto' : 0
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            {fields.firstName.value && fields.firstName.value.length >= 2 && (
+              <>
+                <div className="text-xs text-gray-400 italic mb-1">{usernameTooltipText}</div>
+                <UsernameSuggestions
+                  suggestions={usernameSuggestions}
+                  onSelectSuggestion={handleSelectSuggestion}
+                  onRefresh={fetchUsernameSuggestions}
+                  isLoading={isLoadingSuggestions}
+                />
+              </>
+            )}
+          </motion.div>
 
           <Input
             label="Email"

@@ -40,34 +40,52 @@ export const checkEmailVibe = (email: string): { valid: boolean; message?: strin
 
 // Username validation
 export const checkUsernameVibe = (username: string): { valid: boolean; message?: string } => {
-  // Basic empty check
-  if (!username.trim()) {
-    return { valid: false, message: "Username can't be empty, fr!" };
+  if (!username) {
+    return { valid: false, message: 'Username is required' };
   }
 
-  // Length check
   if (username.length < 3) {
-    return { valid: false, message: "Username's too smol, need at least 3 characters!" };
+    return { valid: false, message: 'Username must be at least 3 characters' };
   }
 
   if (username.length > 30) {
-    return { valid: false, message: "Username's too extra, keep it under 30 characters!" };
+    return { valid: false, message: 'Username must be less than 30 characters' };
   }
 
-  // Character validation
-  const usernameRegex = /^[a-zA-Z0-9_]+$/;
-  if (!usernameRegex.test(username)) {
-    return { valid: false, message: "Username can only have letters, numbers, and underscores. No cap!" };
+  // Check for allowed characters only: alphanumeric, periods, underscores, and hyphens
+  const allowedCharsRegex = /^[a-zA-Z0-9._-]+$/;
+  if (!allowedCharsRegex.test(username)) {
+    return { 
+      valid: false, 
+      message: 'Username can only contain letters, numbers, periods, underscores, and hyphens' 
+    };
   }
 
-  // Reserved username check
+  // Check if username starts with a letter or number (not special chars)
+  if (!/^[a-zA-Z0-9]/.test(username)) {
+    return { valid: false, message: 'Username must start with a letter or number' };
+  }
+
+  // Check for consecutive special characters
+  if (/[._-]{2,}/.test(username)) {
+    return { valid: false, message: 'Username cannot contain consecutive special characters' };
+  }
+
+  // Check if username ends with a special character
+  if (/[._-]$/.test(username)) {
+    return { valid: false, message: 'Username cannot end with a special character' };
+  }
+
+  // Check for reserved usernames
   const reservedUsernames = [
-    'admin', 'administrator', 'system', 'support', 'help',
-    'root', 'moderator', 'mod', 'official', 'staff', 'team'
+    'admin', 'administrator', 'system', 'mod', 'moderator', 'support',
+    'help', 'info', 'contact', 'security', 'official', 'staff',
+    'team', 'billing', 'payment', 'account', 'user', 'username',
+    'password', 'login', 'signup', 'register', 'root'
   ];
-  
+
   if (reservedUsernames.includes(username.toLowerCase())) {
-    return { valid: false, message: "That username is reserved, pick something more you!" };
+    return { valid: false, message: 'This username is reserved' };
   }
 
   return { valid: true };

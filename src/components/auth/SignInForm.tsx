@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Github, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Mail, Lock, Github, AlertCircle, CheckCircle, XCircle, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { Input } from '@/src/components/ui/Input';
 import { Button } from '@/src/components/ui/Button';
@@ -41,6 +41,7 @@ export default function SignInForm() {
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   
   // Rate limiting state
   const [rateLimitState, setRateLimitState] = useState<RateLimitState>({
@@ -337,11 +338,23 @@ export default function SignInForm() {
         
         <Input
           label="Password"
-          type="password"
+          type={showPassword ? "text" : "password"}
           name="password"
           value={passwordState.value}
           onChange={handlePasswordChange}
           leftIcon={<Lock className="h-5 w-5" />}
+          rightIcon={
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowPassword(!showPassword);
+              }}
+              className="text-gray-400 hover:text-gray-300"
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
+          }
           placeholder="Enter your password"
           required
           autoComplete="current-password"

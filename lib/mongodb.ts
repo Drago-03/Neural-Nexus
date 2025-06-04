@@ -18,7 +18,10 @@ const options: MongoClientOptions = {
   socketTimeoutMS: 45000, // Prevent idle connection timeouts
   retryWrites: true,
   retryReads: true,
-  // Don't set explicit TLS settings - let MongoDB driver handle it
+  ssl: true,
+  tls: true,
+  tlsAllowInvalidCertificates: true, // Only for development - remove in production
+  directConnection: false,
 };
 
 // Cache client connection
