@@ -72,3 +72,4 @@ dist-ssr
 *.sw?
 .env*.local
 gcloud-key.json
+gcloud-key.json
