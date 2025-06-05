@@ -31,6 +31,7 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
 - **Open Source Models**: Access a comprehensive library of free models inspired by Transformers
 - **Premium Marketplace**: Buy and sell premium models and datasets for advanced projects
 - **Modern UI**: Responsive design with smooth animations and contemporary aesthetics
+- **Email Notifications**: Receive important updates via email using SendGrid integration
 
 ## Technology Stack
 
@@ -39,6 +40,7 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
 - **Framer Motion**: Animation library for enhanced user experience
 - **Supabase**: Open-source Firebase alternative for authentication and database management
 - **Stripe & Razorpay**: Payment processing solutions
+- **SendGrid**: Email delivery service for transactional emails
 - **Edge Functions**: Lightweight serverless functions for optimal performance
 
 ## Setup Guide
@@ -126,7 +128,28 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
       - Create buckets for: `models`, `avatars`, `thumbnails`
       - Set RLS policies for each bucket
 
-6. **Firebase Setup (Legacy/Optional)**:
+6. **SendGrid Setup (Email Service)**:
+
+   a. Create a SendGrid account at [SendGrid](https://sendgrid.com/) (free tier available)
+   
+   b. Get your API key:
+      - Go to Settings > API Keys > Create API Key
+      - Create a new API key with full access or restricted access to "Mail Send" only
+      - Copy the API key to your `.env.local` file as `SENDGRID_API_KEY`
+   
+   c. Verify your sender identity:
+      - Go to Settings > Sender Authentication
+      - Verify a Single Sender or set up Domain Authentication
+      - Add the verified email address to your `.env.local` file as `EMAIL_FROM`
+   
+   d. Test your email configuration:
+      ```bash
+      node test-sendgrid.js your.email@example.com
+      ```
+   
+   e. For more details, see the [Email Service Documentation](docs/email-service.md)
+
+7. **Firebase Setup (Legacy/Optional)**:
    
    The app is transitioning from Firebase to Supabase, but can still use Firebase for some features.
    
@@ -150,7 +173,7 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
       - Scroll down to "Your apps" and select your web app
       - Copy the Firebase config values to your `.env.local` file
 
-7. **Run Locally**:
+8. **Run Locally**:
    ```bash
    npm run dev
    ```
@@ -596,3 +619,70 @@ Thanks to all our awesome contributors who are helping build Neural Nexus! 🔥
 ## License
 
 © 2025 Indie Hub. All rights reserved. Keep it real, fam! ✌️
+
+## Storage Service
+
+The Neural Nexus application includes a flexible storage service that can operate in two modes:
+
+1. **Google Cloud Storage (Production)**: When properly configured with Google Cloud credentials, the application will use Google Cloud Storage for file uploads and data storage.
+
+2. **Local Fallback (Development)**: If Google Cloud credentials are missing or invalid, the application will automatically fall back to local file system storage, which is ideal for development and testing.
+
+### Configuration
+
+To use Google Cloud Storage, set the following environment variables:
+
+```
+GOOGLE_CLOUD_PROJECT_ID=your-project-id
+GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
+GOOGLE_CLOUD_ACCESS_KEY=your-access-key
+GOOGLE_CLOUD_SECRET_KEY=your-secret-key
+```
+
+If these variables are not set, the system will automatically use the local storage fallback.
+
+### Testing Storage
+
+You can test the storage implementation using the provided test scripts:
+
+```bash
+# Test local storage fallback
+node test-storage-fallback.js
+```
+
+The storage service is used for:
+- Storing model files
+- Uploading model thumbnails
+- Storing user assets
+- Managing application data
+
+## User Profiles with Google Cloud Storage
+
+Neural Nexus now supports storing user profiles and avatars on Google Cloud Storage. This includes:
+
+- **Profile Data Storage**: User profiles are stored in Google Cloud Storage with automatic fallback to in-memory storage for development.
+- **Avatar Upload**: Users can upload, update, and delete their profile pictures, which are stored in Google Cloud Storage.
+- **Email Notifications**: Users receive email notifications when their profiles are updated (if enabled in preferences).
+
+### Setting Up Google Cloud Storage
+
+1. Create a Google Cloud Storage bucket for your user profiles and avatars
+2. Add the following environment variables to your `.env.local` file:
+   ```
+   GOOGLE_CLOUD_PROJECT_ID=your_project_id
+   GOOGLE_CLOUD_STORAGE_BUCKET=your_bucket_name
+   GOOGLE_CLOUD_ACCESS_KEY=your_access_key
+   GOOGLE_CLOUD_SECRET_KEY=your_secret_key
+   GOOGLE_CLOUD_CLIENT_EMAIL=your_client_email
+   ```
+3. Ensure your storage bucket has proper CORS configuration to allow uploads from your domain
+
+### User Profile Features
+
+- **Profile Editing**: Edit your profile at `/profile/edit`
+- **Profile Viewing**: View your profile at `/profile`
+- **Avatar Management**: Upload, update, and delete your avatar
+- **Social Links**: Add links to your social media profiles
+- **Customizable Settings**: Manage email notification preferences
+
+For more details, see the [User Profiles Documentation](docs/user-profiles.md).

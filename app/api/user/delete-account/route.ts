@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { UserService } from '@/lib/models/user';
 import { closeMongoDBConnection } from '@/lib/mongodb';
+import { EmailService } from '@/lib/services/email-service';
 import crypto from 'crypto';
 
 // Add static export configuration at the top
@@ -60,14 +61,21 @@ export async function POST(req: NextRequest) {
     // Generate confirmation URL
     const confirmationUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/account/confirm-deletion?token=${deletionToken}&userId=${userId}`;
     
-    // In a real app, we would send an email here with the confirmation link
-    // For this example, we'll just log it and return it in the response
-    console.log(`Deletion confirmation URL (would be sent via email): ${confirmationUrl}`);
+    // Send email with confirmation link using SendGrid
+    const emailSent = await EmailService.sendAccountDeletionConfirmation(
+      userData.email,
+      confirmationUrl
+    );
     
-    // Simulate sending an email
-    console.log(`Email would be sent to: ${userData.email}`);
-    console.log(`Email subject: Confirm your account deletion request`);
-    console.log(`Email body: Please confirm your request to delete your Neural Nexus account by clicking this link: ${confirmationUrl}. After confirmation, your account will be scheduled for deletion and will be permanently removed after 48 hours. You can cancel the deletion by logging in during this period.`);
+    if (!emailSent) {
+      console.error(`Failed to send deletion confirmation email to ${userData.email}`);
+      return NextResponse.json(
+        { error: 'Failed to send confirmation email. Please try again later.' },
+        { status: 500 }
+      );
+    }
+    
+    console.log(`Deletion confirmation email sent to: ${userData.email}`);
     
     // Return success response with token info (for demo purposes)
     return NextResponse.json({

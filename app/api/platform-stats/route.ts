@@ -49,65 +49,77 @@ export async function GET() {
     console.log(`🔍 Supabase URL available: ${!!supabaseUrl}`);
     console.log(`🔍 Service role key available: ${!!supabaseServiceRoleKey}`);
     
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      console.error("❌ Missing Supabase URL or service role key");
-      return NextResponse.json(FALLBACK_DATA);
-    }
-
-    const supabaseAdmin = createClient(
-      supabaseUrl,
-      supabaseServiceRoleKey,
-      { 
-        auth: { persistSession: false },
-        global: { headers: { 'x-my-custom-header': 'platform-stats-api' } }
-      }
-    );
-
-    // Get registered users count directly from Supabase
-    try {
-      console.log("🔄 Fetching registered users count from Supabase...");
-      
-      // First try: using the from() method to query auth.users
-      let { count, error } = await supabaseAdmin
-        .from('auth.users')
-        .select('*', { count: 'exact', head: true });
-      
-      if (error) {
-        console.error("❌ Error with auth.users query:", error.message);
-        
-        // Second try: using a direct SQL query to count users
-        const { data, error: sqlError } = await supabaseAdmin.rpc(
-          'get_user_count',
-          {}
-        );
-        
-        if (!sqlError && data !== null) {
-          stats.activeUsers = data;
-          console.log("✅ Got user count from RPC function:", data);
-        } else {
-          console.error("❌ RPC function error:", sqlError?.message);
-          
-          // Third try: direct admin API method
-          try {
-            const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-            
-            if (!authError && authData?.users) {
-              stats.activeUsers = authData.users.length;
-              console.log("✅ Got users via admin API:", authData.users.length);
-            } else {
-              console.error("❌ Admin API error:", authError?.message);
-              console.log("⚠️ Using default user count:", stats.activeUsers);
-            }
-          } catch (adminErr) {
-            console.error("❌ Admin API exception:", adminErr);
+    if (supabaseUrl && supabaseServiceRoleKey) {
+      try {
+        const supabaseAdmin = createClient(
+          supabaseUrl,
+          supabaseServiceRoleKey,
+          { 
+            auth: { persistSession: false },
+            global: { headers: { 'x-my-custom-header': 'platform-stats-api' } }
           }
+        );
+
+        // Get registered users count directly from Supabase
+        console.log("🔄 Fetching registered users count from Supabase...");
+        
+        // First try: using the from() method to query auth.users
+        let { count, error } = await supabaseAdmin
+          .from('auth.users')
+          .select('*', { count: 'exact', head: true });
+        
+        if (error) {
+          console.error("❌ Error with auth.users query:", error.message);
+          
+          // Second try: using a direct SQL query to count users
+          try {
+            // Define the RPC function if it doesn't exist yet
+            try {
+              await supabaseAdmin.rpc('create_get_user_count_function', {});
+              console.log("Created get_user_count function");
+            } catch (funcErr) {
+              // Ignore errors if function already exists
+              console.log("Function may already exist, continuing...");
+            }
+            
+            const { data, error: sqlError } = await supabaseAdmin.rpc(
+              'get_user_count',
+              {}
+            );
+            
+            if (!sqlError && data !== null) {
+              stats.activeUsers = data;
+              console.log("✅ Got user count from RPC function:", data);
+            } else {
+              console.error("❌ RPC function error:", sqlError?.message);
+              
+              // Third try: direct admin API method
+              try {
+                const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+                
+                if (!authError && authData?.users) {
+                  stats.activeUsers = authData.users.length;
+                  console.log("✅ Got users via admin API:", authData.users.length);
+                } else {
+                  console.error("❌ Admin API error:", authError?.message);
+                  console.log("⚠️ Using default user count:", stats.activeUsers);
+                }
+              } catch (adminErr) {
+                console.error("❌ Admin API exception:", adminErr);
+              }
+            }
+          } catch (rpcErr) {
+            console.error("❌ RPC setup error:", rpcErr);
+          }
+        } else if (count !== null) {
+          stats.activeUsers = count;
+          console.log("✅ Got user count from auth.users:", count);
         }
-      } else if (count !== null) {
-        stats.activeUsers = count;
-        console.log("✅ Got user count from auth.users:", count);
+      } catch (error) {
+        console.error("❌ Exception with Supabase client:", error);
       }
-    } catch (error) {
-      console.error("❌ Exception fetching users:", error);
+    } else {
+      console.error("❌ Missing Supabase URL or service role key");
     }
 
     // Connect to MongoDB for other stats

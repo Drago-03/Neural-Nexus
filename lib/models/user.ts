@@ -60,7 +60,16 @@ export class UserService {
   private static readonly SALT_ROUNDS = 10;
 
   // Add a static cache for development
-  private static _userCache: Map<string, any>;
+  private static _userCache: Map<string, any> = new Map();
+
+  /**
+   * Initialize the cache if needed
+   */
+  private static ensureCacheExists(): void {
+    if (!this._userCache) {
+      this._userCache = new Map();
+    }
+  }
 
   /**
    * Create a new user
@@ -160,9 +169,36 @@ export class UserService {
    * Check if username is available
    */
   static async isUsernameAvailable(username: string): Promise<boolean> {
-    const collection = await getCollection(this.COLLECTION_NAME);
-    const user = await collection.findOne({ username: username.toLowerCase() });
-    return !user;
+    // Normalize the username to lowercase
+    const normalizedUsername = username.toLowerCase();
+    
+    // Ensure cache exists
+    this.ensureCacheExists();
+    
+    // Check cache first
+    if (this._userCache.has(`username:${normalizedUsername}`)) {
+      return this._userCache.get(`username:${normalizedUsername}`);
+    }
+    
+    try {
+      const collection = await getCollection(this.COLLECTION_NAME);
+      // Use lean query with projection to only get _id field
+      const user = await collection.findOne({ username: normalizedUsername }, { projection: { _id: 1 } });
+      
+      // Cache the result for future checks
+      const isAvailable = !user;
+      this._userCache.set(`username:${normalizedUsername}`, isAvailable);
+      
+      // Set expiry for cache entry (5 minutes)
+      setTimeout(() => {
+        this._userCache.delete(`username:${normalizedUsername}`);
+      }, 5 * 60 * 1000);
+      
+      return isAvailable;
+    } catch (error) {
+      console.error('Error checking username availability:', error);
+      return false;
+    }
   }
 
   /**

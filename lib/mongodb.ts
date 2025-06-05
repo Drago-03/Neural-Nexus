@@ -18,9 +18,10 @@ const options: MongoClientOptions = {
   socketTimeoutMS: 45000, // Prevent idle connection timeouts
   retryWrites: true,
   retryReads: true,
-  ssl: true,
-  tls: true,
-  tlsAllowInvalidCertificates: true, // Only for development - remove in production
+  // Remove insecure TLS settings
+  ssl: process.env.NODE_ENV === 'production',
+  tls: process.env.NODE_ENV === 'production',
+  // tlsAllowInvalidCertificates: true, // Only for development - remove in production
   directConnection: false,
 };
 

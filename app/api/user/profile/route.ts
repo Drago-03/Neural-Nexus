@@ -1,189 +1,309 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { UserService } from '@/lib/models/user';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { UserProfileService } from '@/lib/services/user-profile-service';
+import { StorageService } from '@/lib/services/storage-service';
+
+// Add static export configuration
+export const dynamic = 'force-dynamic';
 
 // Force Node.js runtime for this route
 export const runtime = 'nodejs';
 
-// GET /api/user/profile - Get user profile status
+/**
+ * GET handler for /api/user/profile
+ * Gets the user's profile
+ */
 export async function GET(req: NextRequest) {
   try {
-    console.log("GET /api/user/profile - Checking profile status");
+    // Get current user session
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      console.error("Profile status check failed: No active session");
+      console.error("Profile fetch failed: No active session");
       return NextResponse.json(
-        { error: 'Unauthorized - No active session' },
+        { error: 'Unauthorized - You must be logged in to view your profile' },
         { status: 401 }
       );
     }
     
-    console.log(`Checking profile completion status for user: ${session.user.id}`);
+    const userId = session.user.id;
+    console.log(`Fetching profile for user: ${userId}`);
     
-    // Check if profile is complete
-    const isComplete = await UserService.isProfileComplete(session.user.id);
+    // Get user profile
+    const profile = await UserProfileService.getProfileByUserId(userId);
     
-    console.log(`Profile completion status for user ${session.user.id}: ${isComplete ? 'Complete' : 'Incomplete'}`);
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'Profile not found' },
+        { status: 404 }
+      );
+    }
     
-    return NextResponse.json({ 
-      isComplete,
-      userId: session.user.id
+    // Return profile data (excluding sensitive fields)
+    const { email, userId: profileUserId, ...safeProfileData } = profile;
+    
+    return NextResponse.json({
+      success: true,
+      profile: {
+        ...safeProfileData,
+        email: session.user.email, // Only include email from session for security
+      }
     });
-  } catch (error) {
-    console.error('Error checking profile status:', error);
-    return NextResponse.json(
-      { error: 'Failed to check profile status' },
-      { status: 500 }
-    );
+    
+  } catch (error: any) {
+    console.error('Error fetching user profile:', error);
+    
+    return NextResponse.json({
+      error: `Failed to fetch profile: ${error.message || 'Unknown error'}`,
+      success: false
+    }, {
+      status: 500
+    });
   }
 }
 
-// POST /api/user/profile - Complete user profile
+/**
+ * POST handler for /api/user/profile
+ * Updates the user's profile
+ */
 export async function POST(req: NextRequest) {
   try {
-    console.log("POST /api/user/profile - Starting profile update");
+    // Get current user session
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
       console.error("Profile update failed: No active session");
       return NextResponse.json(
-        { error: 'Unauthorized - No active session' },
+        { error: 'Unauthorized - You must be logged in to update your profile' },
         { status: 401 }
       );
     }
     
-    console.log("User authenticated:", session.user.id);
+    const userId = session.user.id;
+    const email = session.user.email || '';
     
-    let profileData;
-    try {
-      profileData = await req.json();
-      console.log("Received profile data:", JSON.stringify(profileData));
-    } catch (parseError) {
-      console.error("Error parsing request body:", parseError);
-      return NextResponse.json(
-        { error: 'Invalid request body' },
-        { status: 400 }
-      );
-    }
+    // Initialize storage if needed
+    await StorageService.initStorage();
     
-    // Validate required fields
-    if (!profileData.displayName) {
-      console.error("Profile update failed: Name is required");
-      return NextResponse.json(
-        { error: 'Name is required' },
-        { status: 400 }
-      );
-    }
+    // Check if we're dealing with a multipart form (file upload)
+    const contentType = req.headers.get('content-type') || '';
     
-    // Sanitize the data to handle undefined values properly
-    const sanitizedData = {
-      displayName: profileData.displayName,
-      bio: profileData.bio || '',
-      // Optional fields - only include if provided
-      organization: profileData.organization || undefined,
-      jobTitle: profileData.jobTitle || undefined,
-      location: profileData.location || undefined,
-      website: profileData.website || undefined,
-      skills: Array.isArray(profileData.skills) ? profileData.skills : [],
-      interests: Array.isArray(profileData.interests) ? profileData.interests : []
-    };
-    
-    console.log("Sanitized profile data:", JSON.stringify(sanitizedData));
-    
-    try {
-      // First check if user exists in database
-      const existingUser = await UserService.getUserById(session.user.id);
+    if (contentType.includes('multipart/form-data')) {
+      // Handle file upload
+      const formData = await req.formData();
+      const file = formData.get('avatar') as File | null;
+      const displayName = formData.get('displayName') as string || undefined;
+      const bio = formData.get('bio') as string || undefined;
+      const twitterLink = formData.get('twitter') as string || undefined;
+      const githubLink = formData.get('github') as string || undefined;
+      const linkedinLink = formData.get('linkedin') as string || undefined;
+      const websiteLink = formData.get('website') as string || undefined;
       
-      if (!existingUser) {
-        console.error(`User ${session.user.id} not found in database. Creating new user record.`);
-        
-        // Instead of trying to create a new user which requires fields we don't have,
-        // we'll just update the profile directly, as MongoDB will create the document
-        // if it doesn't exist when we do the profile update.
-        console.log(`Will create user ${session.user.id} during profile update`);
-      }
+      // Build profile updates
+      const profileUpdates: any = {
+        displayName,
+        bio,
+        socialLinks: {
+          twitter: twitterLink,
+          github: githubLink,
+          linkedin: linkedinLink,
+          website: websiteLink
+        }
+      };
       
-      // Complete the user profile
-      console.log(`Updating profile for user ${session.user.id}`);
-      const success = await UserService.completeProfile(
-        session.user.id,
-        sanitizedData
-      );
+      // Get existing profile or create new one
+      let profile = await UserProfileService.getProfileByUserId(userId);
       
-      if (!success) {
-        console.error(`Profile update failed for user ${session.user.id}: Database operation failed`);
-        return NextResponse.json(
-          { error: 'Failed to update profile' },
-          { status: 500 }
-        );
-      }
-      
-      console.log(`Profile update successful for user ${session.user.id}`);
-      
-      // Get updated user data
-      const updatedUser = await UserService.getUserById(session.user.id);
-      
-      if (!updatedUser) {
-        console.error(`Could not retrieve updated user data for ${session.user.id}`);
-        return NextResponse.json({
-          success: true,
-          message: 'Profile updated but could not retrieve updated data',
-          user: { ...sanitizedData, _id: session.user.id }
+      if (!profile) {
+        profile = await UserProfileService.createProfile({
+          userId,
+          email,
+          ...profileUpdates
         });
+        
+        if (!profile) {
+          return NextResponse.json(
+            { error: 'Failed to create user profile' },
+            { status: 500 }
+          );
+        }
+      } else {
+        // Update existing profile (without avatar yet)
+        profile = await UserProfileService.updateProfile(userId, profileUpdates);
+        
+        if (!profile) {
+          return NextResponse.json(
+            { error: 'Failed to update user profile' },
+            { status: 500 }
+          );
+        }
       }
       
-      console.log(`Retrieved updated user data for ${session.user.id}`);
+      // Process avatar upload if present
+      if (file) {
+        const fileBuffer = Buffer.from(await file.arrayBuffer());
+        const fileType = file.type || 'image/png';
+        
+        // Upload avatar
+        const avatarUrl = await UserProfileService.uploadAvatar(
+          userId,
+          fileBuffer,
+          fileType
+        );
+        
+        if (avatarUrl) {
+          profile.avatarUrl = avatarUrl;
+        }
+      }
       
       return NextResponse.json({
         success: true,
-        message: 'Profile completed successfully',
-        user: updatedUser
+        profile: {
+          ...profile,
+          email: session.user.email // Only include email from session for security
+        }
       });
-    } catch (dbError: any) {
-      console.error(`Database error during profile update for user ${session.user.id}:`, dbError);
+    } else {
+      // Handle regular JSON body
+      const data = await req.json();
       
-      // Return a more graceful error instead of the database error details
+      // Get existing profile or create new one
+      let profile = await UserProfileService.getProfileByUserId(userId);
+      
+      if (!profile) {
+        profile = await UserProfileService.createProfile({
+          userId,
+          email,
+          ...data
+        });
+        
+        if (!profile) {
+          return NextResponse.json(
+            { error: 'Failed to create user profile' },
+            { status: 500 }
+          );
+        }
+      } else {
+        // Update existing profile
+        profile = await UserProfileService.updateProfile(userId, data);
+        
+        if (!profile) {
+          return NextResponse.json(
+            { error: 'Failed to update user profile' },
+            { status: 500 }
+          );
+        }
+      }
+      
       return NextResponse.json({
-        success: true, // Tell frontend it succeeded even though there was a DB issue
-        message: 'Profile completed but not saved to database yet. Will be synced later.',
-        user: { 
-          _id: session.user.id,
-          ...sanitizedData,
-          profileComplete: true,
-          updatedAt: new Date()
+        success: true,
+        profile: {
+          ...profile,
+          email: session.user.email // Only include email from session for security
         }
       });
     }
+    
   } catch (error: any) {
-    console.error('Error completing profile:', error);
+    console.error('Error updating user profile:', error);
     
-    // Get session and profileData safely if they exist in this scope
-    let userId = '';
-    let userData = {};
+    return NextResponse.json({
+      error: `Failed to update profile: ${error.message || 'Unknown error'}`,
+      success: false
+    }, {
+      status: 500
+    });
+  }
+}
+
+/**
+ * DELETE handler for /api/user/profile
+ * Deletes specific profile data (not the entire profile)
+ */
+export async function DELETE(req: NextRequest) {
+  try {
+    // Get current user session
+    const session = await getServerSession(authOptions);
     
-    try {
-      // Try to get session info if available
-      const session = await getServerSession(authOptions);
-      userId = session?.user?.id || 'unknown';
-      
-      // Use an empty object as fallback if we can't get the profile data
-      userData = { id: userId };
-    } catch (e) {
-      console.error('Failed to get session in error handler:', e);
+    if (!session?.user?.id) {
+      console.error("Profile update failed: No active session");
+      return NextResponse.json(
+        { error: 'Unauthorized - You must be logged in to update your profile' },
+        { status: 401 }
+      );
     }
     
-    // Return a more helpful error message instead of exposing the error
+    const userId = session.user.id;
+    
+    // Get params from URL
+    const url = new URL(req.url);
+    const field = url.searchParams.get('field');
+    
+    if (!field) {
+      return NextResponse.json(
+        { error: 'Missing required parameter: field' },
+        { status: 400 }
+      );
+    }
+    
+    // Get existing profile
+    const profile = await UserProfileService.getProfileByUserId(userId);
+    
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'Profile not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Handle different field deletions
+    let updates: any = {};
+    
+    switch (field) {
+      case 'avatar':
+        updates.avatarUrl = '';
+        break;
+      case 'bio':
+        updates.bio = '';
+        break;
+      case 'socialLinks':
+        updates.socialLinks = {};
+        break;
+      default:
+        return NextResponse.json(
+          { error: `Cannot delete unknown field: ${field}` },
+          { status: 400 }
+        );
+    }
+    
+    // Update profile
+    const updatedProfile = await UserProfileService.updateProfile(userId, updates);
+    
+    if (!updatedProfile) {
+      return NextResponse.json(
+        { error: 'Failed to update profile' },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json({
-      success: true, // Return success to avoid blocking the user
-      message: 'Profile completed but not saved to database yet. Will be synced later.',
-      user: { 
-        id: userId,
-        profileComplete: true,
-        updatedAt: new Date(),
-        ...userData
+      success: true,
+      message: `Successfully removed ${field} from profile`,
+      profile: {
+        ...updatedProfile,
+        email: session.user.email // Only include email from session for security
       }
+    });
+    
+  } catch (error: any) {
+    console.error('Error updating user profile:', error);
+    
+    return NextResponse.json({
+      error: `Failed to update profile: ${error.message || 'Unknown error'}`,
+      success: false
+    }, {
+      status: 500
     });
   }
 } 

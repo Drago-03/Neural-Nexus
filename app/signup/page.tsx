@@ -131,7 +131,7 @@ export default function SignUpPage() {
         // If API call fails, just validate the format
         updateField('username', { valid: result.valid, error: result.message, validating: false });
       }
-    }, 600)).current,
+    }, 300)).current,
 
     email: useRef(debounce(async (value: string) => {
       // First check format
@@ -603,61 +603,75 @@ export default function SignUpPage() {
     setUsernameSuggestions([]);
     
     try {
-      const response = await fetch('/api/username-check', {
+      // Create a timeout to limit the wait time
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Suggestions request timeout')), 3000);
+      });
+      
+      // The actual API request
+      const fetchPromise = fetch('/api/username-check', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           firstName: fields.firstName.value,
-          lastName: fields.lastName.value || ''
+          lastName: fields.lastName.value || '',
+          // Exclude already tried usernames
+          exclude: usernameSuggestions
         })
+      }).then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch username suggestions');
+        }
+        return response.json();
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch username suggestions');
-      }
-      
-      const data = await response.json();
+      // Race between the timeout and the fetch
+      const data = await Promise.race([fetchPromise, timeoutPromise]) as any;
       
       if (data.suggestions && data.suggestions.length) {
         setUsernameSuggestions(data.suggestions);
         setUsernameTooltipText("First 3 are based on your name, last 3 are tech/gaming inspired");
       } else {
-        // Generate fallback suggestions client-side if the API fails
-        let fallbackSuggestions = [];
-        
-        // Sanitize function to ensure no emojis
-        const sanitizeUsername = (username: string): string => {
-          return username.replace(/[^\w_]/g, ''); // Only allow alphanumeric and underscore
-        };
-        
-        // Name-based suggestions (3)
-        const firstName = fields.firstName.value.toLowerCase();
-        const lastName = fields.lastName.value ? fields.lastName.value.toLowerCase() : '';
-        
-        fallbackSuggestions.push(sanitizeUsername(firstName + (lastName ? lastName.substring(0, 1) : '')));
-        fallbackSuggestions.push(sanitizeUsername(firstName + (lastName || '') + Math.floor(Math.random() * 999)));
-        fallbackSuggestions.push(sanitizeUsername((firstName.substring(0, 1) + (lastName || '')).toLowerCase()));
-        
-        // Tech/Gaming suggestions (3)
-        const techTerms = ['dev', 'tech', 'code', 'ai', 'web3', 'crypto', 'pixel'];
-        const gamingTerms = ['gamer', 'player', 'elite', 'pro', 'legend', 'champion', 'win'];
-        const getRandomItem = (arr: string[]): string => arr[Math.floor(Math.random() * arr.length)];
-        
-        fallbackSuggestions.push(sanitizeUsername(firstName + getRandomItem(techTerms)));
-        fallbackSuggestions.push(sanitizeUsername(getRandomItem(gamingTerms) + firstName));
-        fallbackSuggestions.push(sanitizeUsername(firstName + getRandomItem(gamingTerms) + Math.floor(Math.random() * 99)));
-        
-        setUsernameSuggestions(fallbackSuggestions);
-        setUsernameTooltipText("Generated locally - first 3 name-based, last 3 tech/gaming vibes");
+        generateFallbackSuggestions();
       }
     } catch (error) {
       console.error('Error fetching username suggestions:', error);
-      setUsernameTooltipText("Something's off with our suggestion engine right now");
+      generateFallbackSuggestions();
     } finally {
       setIsLoadingSuggestions(false);
     }
+  };
+  
+  // Generate fallback suggestions client-side
+  const generateFallbackSuggestions = () => {
+    let fallbackSuggestions = [];
+    
+    // Sanitize function to ensure no emojis
+    const sanitizeUsername = (username: string): string => {
+      return username.replace(/[^\w_]/g, ''); // Only allow alphanumeric and underscore
+    };
+    
+    // Name-based suggestions (3)
+    const firstName = fields.firstName.value.toLowerCase();
+    const lastName = fields.lastName.value ? fields.lastName.value.toLowerCase() : '';
+    
+    fallbackSuggestions.push(sanitizeUsername(firstName + (lastName ? lastName.substring(0, 1) : '')));
+    fallbackSuggestions.push(sanitizeUsername(firstName + (lastName || '') + Math.floor(Math.random() * 999)));
+    fallbackSuggestions.push(sanitizeUsername((firstName.substring(0, 1) + (lastName || '')).toLowerCase()));
+    
+    // Tech/Gaming suggestions (3)
+    const techTerms = ['dev', 'tech', 'code', 'ai', 'web3', 'crypto', 'pixel'];
+    const gamingTerms = ['gamer', 'player', 'elite', 'pro', 'legend', 'champion', 'win'];
+    const getRandomItem = (arr: string[]): string => arr[Math.floor(Math.random() * arr.length)];
+    
+    fallbackSuggestions.push(sanitizeUsername(firstName + getRandomItem(techTerms)));
+    fallbackSuggestions.push(sanitizeUsername(getRandomItem(gamingTerms) + firstName));
+    fallbackSuggestions.push(sanitizeUsername(firstName + getRandomItem(gamingTerms) + Math.floor(Math.random() * 99)));
+    
+    setUsernameSuggestions(fallbackSuggestions);
+    setUsernameTooltipText("Generated locally - first 3 name-based, last 3 tech/gaming vibes");
   };
   
   // Add function to handle selecting a suggestion

@@ -253,4 +253,47 @@ export async function setupStoredProcedures() {
       error: error instanceof Error ? error.message : 'Unknown stored procedures setup error' 
     };
   }
+}
+
+/**
+ * Creates a Supabase RPC function to count users
+ * This is used by the platform-stats API
+ */
+export async function createUserCountFunction() {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error("Missing Supabase credentials for RPC function setup");
+      return;
+    }
+    
+    const supabaseAdmin = createClient(
+      supabaseUrl,
+      supabaseServiceRoleKey,
+      { auth: { persistSession: false } }
+    );
+    
+    // SQL to create the function - this will be executed on the database
+    const { error } = await supabaseAdmin.rpc('create_user_count_function', {
+      function_definition: `
+        CREATE OR REPLACE FUNCTION get_user_count()
+        RETURNS integer
+        LANGUAGE sql
+        SECURITY DEFINER
+        AS $$
+          SELECT COUNT(*) FROM auth.users;
+        $$;
+      `
+    });
+    
+    if (error) {
+      console.error("Error creating user count function:", error);
+    } else {
+      console.log("Successfully created get_user_count function");
+    }
+  } catch (error) {
+    console.error("Failed to create user count function:", error);
+  }
 } 

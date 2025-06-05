@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, CheckCircle, Sparkles } from 'lucide-react';
+import { X, Mail, CheckCircle, Sparkles, Loader2 } from 'lucide-react';
 
 interface NewsletterDialogProps {
   isOpen: boolean;
@@ -12,9 +12,10 @@ interface NewsletterDialogProps {
 const NewsletterDialog = ({ isOpen, onClose }: NewsletterDialogProps) => {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic email validation
@@ -23,16 +24,40 @@ const NewsletterDialog = ({ isOpen, onClose }: NewsletterDialogProps) => {
       return;
     }
     
-    // Here you would typically send this to your API
-    setIsSubmitted(true);
+    setIsLoading(true);
     setError('');
     
-    // Reset after a few seconds
-    setTimeout(() => {
-      setIsSubmitted(false);
-      setEmail('');
-      onClose();
-    }, 3000);
+    try {
+      // Send the email using our API
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to subscribe');
+      }
+      
+      // Show success state
+      setIsSubmitted(true);
+      
+      // Reset after a few seconds
+      setTimeout(() => {
+        setIsSubmitted(false);
+        setEmail('');
+        onClose();
+      }, 3000);
+    } catch (err: any) {
+      console.error('Newsletter subscription error:', err);
+      setError(err.message || 'Something went wrong, try again later!');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -90,12 +115,21 @@ const NewsletterDialog = ({ isOpen, onClose }: NewsletterDialogProps) => {
                         placeholder="your.email@example.com"
                         className="flex-1 bg-gray-900 rounded-l-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none"
                         aria-label="Email address"
+                        disabled={isLoading}
                       />
                       <button
                         type="submit"
-                        className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-3 rounded-r-lg font-medium hover:opacity-90 transition-opacity flex-shrink-0"
+                        disabled={isLoading}
+                        className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-3 rounded-r-lg font-medium hover:opacity-90 transition-opacity flex-shrink-0 flex items-center justify-center"
                       >
-                        Subscribe
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          'Subscribe'
+                        )}
                       </button>
                     </form>
                   ) : (
