@@ -585,41 +585,6 @@ We're grateful to our sponsors who make this project possible.
   <a href="https://github.com/sponsors/Drago-03"><img src="https://img.shields.io/badge/GitHub-Become%20a%20Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsor"></a>
 </div>
 
-## Contributing
-
-Got ideas to make this even more lit? Drop a PR or issue. Let's build this together! 💡
-
-### **Contributors**
-Thanks to all our awesome contributors who are helping build Neural Nexus! 🔥
-
-<a href="https://github.com/Drago-03/Neural-Nexus/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Drago-03/Neural-Nexus" alt="Contributors" />
-</a>
-
----
-
-<div align="center">
-  <img src="https://img.shields.io/badge/-%E2%9C%A8%20Thank%20you%20for%20visiting!%20%E2%9C%A8-C77DFF?style=for-the-badge&fontWeight=bold" alt="Thank you for visiting" />
-  <img src="https://img.shields.io/badge/-%F0%9F%94%A5%20We%20appreciate%20your%20support!%20%F0%9F%94%A5-9146FF?style=for-the-badge&fontWeight=bold" alt="We appreciate your support" />
-  <img src="https://img.shields.io/badge/-%F0%9F%9A%80%20Join%20our%20community%20today!%20%F0%9F%9A%80-6441A4?style=for-the-badge&fontWeight=bold" alt="Join our community today" />
-  <img src="https://img.shields.io/badge/-%F0%9F%A7%A0%20Let's%20build%20the%20future%20of%20AI!%20%F0%9F%A7%A0-C77DFF?style=for-the-badge&fontWeight=bold" alt="Let's build the future of AI" />
-  
-  <blockquote>
-    <p><em>"The future belongs to those who believe in the beauty of their code."</em></p>
-    <p>— Neural-Nexus Team</p>
-  </blockquote>
-</div>
-
-<p align="center">
-  <a href="#top">
-    <img src="https://img.shields.io/badge/⬆%20Back%20to%20top-gray?style=for-the-badge" alt="Back to top"/>
-  </a>
-</p>
-
-## License
-
-© 2025 Indie Hub. All rights reserved. Keep it real, fam! ✌️
-
 ## Storage Service
 
 The Neural Nexus application includes a flexible storage service that can operate in two modes:
@@ -686,3 +651,38 @@ Neural Nexus now supports storing user profiles and avatars on Google Cloud Stor
 - **Customizable Settings**: Manage email notification preferences
 
 For more details, see the [User Profiles Documentation](docs/user-profiles.md).
+
+## Contributing
+
+Got ideas to make this even more lit? Drop a PR or issue. Let's build this together! 💡
+
+### **Contributors**
+Thanks to all our awesome contributors who are helping build Neural Nexus! 🔥
+
+<a href="https://github.com/Drago-03/Neural-Nexus/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Drago-03/Neural-Nexus" alt="Contributors" />
+</a>
+
+---
+
+<div align="center">
+  <img src="https://img.shields.io/badge/-%E2%9C%A8%20Thank%20you%20for%20visiting!%20%E2%9C%A8-C77DFF?style=for-the-badge&fontWeight=bold" alt="Thank you for visiting" />
+  <img src="https://img.shields.io/badge/-%F0%9F%94%A5%20We%20appreciate%20your%20support!%20%F0%9F%94%A5-9146FF?style=for-the-badge&fontWeight=bold" alt="We appreciate your support" />
+  <img src="https://img.shields.io/badge/-%F0%9F%9A%80%20Join%20our%20community%20today!%20%F0%9F%9A%80-6441A4?style=for-the-badge&fontWeight=bold" alt="Join our community today" />
+  <img src="https://img.shields.io/badge/-%F0%9F%A7%A0%20Let's%20build%20the%20future%20of%20AI!%20%F0%9F%A7%A0-C77DFF?style=for-the-badge&fontWeight=bold" alt="Let's build the future of AI" />
+  
+  <blockquote>
+    <p><em>"The future belongs to those who believe in the beauty of their code."</em></p>
+    <p>— Neural-Nexus Team</p>
+  </blockquote>
+</div>
+
+<p align="center">
+  <a href="#top">
+    <img src="https://img.shields.io/badge/⬆%20Back%20to%20top-gray?style=for-the-badge" alt="Back to top"/>
+  </a>
+</p>
+
+## License
+
+© 2025 Indie Hub. All rights reserved. Keep it real, fam! ✌️
