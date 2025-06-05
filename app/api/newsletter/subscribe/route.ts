@@ -1,12 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EmailService } from '@/lib/services/email-service';
-import { generateNewsletterConfirmation } from '@/lib/templates/email-template';
 
 // Add static export configuration at the top
 export const dynamic = 'force-dynamic';
 
 // Force Node.js runtime for this route
 export const runtime = 'nodejs';
+
+/**
+ * Generate a newsletter confirmation email
+ */
+function generateNewsletterConfirmation(): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Newsletter Confirmation</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h1 style="color: #6200ea;">Welcome to Neural Nexus Newsletter!</h1>
+      <p>Yooo! Thanks for subscribing to our lit newsletter! 🔥</p>
+      <p>You'll be the first to know about our sick updates and drops!</p>
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 0.9em; color: #666;">
+        <p>To stop receiving these emails, <a href="https://neuralnexus.biz/unsubscribe" style="color: #6200ea;">unsubscribe here</a>.</p>
+      </div>
+    </body>
+    </html>
+  `;
+}
 
 /**
  * POST handler for /api/newsletter/subscribe

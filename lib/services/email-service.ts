@@ -13,12 +13,7 @@
  */
 
 import nodemailer from 'nodemailer';
-import { 
-  generateWelcomeEmail, 
-  generatePasswordResetEmail,
-  generateVerificationEmail,
-  generateTestEmail
-} from '@/lib/templates/email-template';
+// Removed imports from email-template
 
 // Email interface
 export interface EmailMessage {
@@ -34,6 +29,86 @@ export interface EmailServiceStatus {
   initialized: boolean;
   transportType: 'smtp' | 'local' | 'none';
   error: string | null;
+}
+
+/**
+ * Simple template generators
+ */
+function generateWelcomeEmail(name: string): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Welcome to Neural Nexus</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h1 style="color: #6200ea;">Welcome to Neural Nexus!</h1>
+      <p>Hey ${name}, welcome to the crew! 🔥</p>
+      <p>We're stoked to have you join our AI community. Get ready for some fire content!</p>
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 0.9em; color: #666;">
+        <p>Stay lit,<br>The Neural Nexus Squad</p>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+function generatePasswordResetEmail(resetLink: string): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Reset Your Password</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h1 style="color: #6200ea;">Reset Your Password</h1>
+      <p>Yo! You asked to reset your password. No worries, we got you!</p>
+      <p>Click the link below to set a new password:</p>
+      <p><a href="${resetLink}" style="display: inline-block; background: linear-gradient(to right, #8B5CF6, #EC4899); color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Reset Password</a></p>
+      <p>If you didn't request this, just ignore this email and your password will stay the same.</p>
+    </body>
+    </html>
+  `;
+}
+
+function generateVerificationEmail(verificationLink: string): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Verify Your Email</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h1 style="color: #6200ea;">Verify Your Email</h1>
+      <p>Almost there! Just click the link below to verify your email:</p>
+      <p><a href="${verificationLink}" style="display: inline-block; background: linear-gradient(to right, #8B5CF6, #EC4899); color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Verify Email</a></p>
+      <p>If you didn't create an account with us, you can safely ignore this email.</p>
+    </body>
+    </html>
+  `;
+}
+
+function generateTestEmail(): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Test Email</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h1 style="color: #6200ea;">Neural Nexus Test Email</h1>
+      <p>Yo! This is just a test email from Neural Nexus!</p>
+      <p>If you're seeing this, our email system is vibin' correctly!</p>
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 0.9em; color: #666;">
+        <p>This is an automated message - please don't reply to this email.</p>
+      </div>
+    </body>
+    </html>
+  `;
 }
 
 /**
