@@ -8,29 +8,6 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
- * Generate a newsletter confirmation email
- */
-function generateNewsletterConfirmation(): string {
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Newsletter Confirmation</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h1 style="color: #6200ea;">Welcome to Neural Nexus Newsletter!</h1>
-      <p>Yooo! Thanks for subscribing to our lit newsletter! 🔥</p>
-      <p>You'll be the first to know about our sick updates and drops!</p>
-      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 0.9em; color: #666;">
-        <p>To stop receiving these emails, <a href="https://neuralnexus.biz/unsubscribe" style="color: #6200ea;">unsubscribe here</a>.</p>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-/**
  * POST handler for /api/newsletter/subscribe
  * Subscribes a user to the newsletter
  */
@@ -51,22 +28,18 @@ export async function POST(req: NextRequest) {
     // In a real app, you would store this email in a database
     // For now, we'll just send a welcome email
     
-    // Generate the email HTML using our template
-    const emailHtml = generateNewsletterConfirmation();
-    
-    // Send welcome email
-    const emailSent = await EmailService.yeetEmail({
-      to: email,
-      subject: '🔥 Welcome to the Neural Nexus Newsletter!',
-      html: emailHtml
-    });
+    // Send welcome email using our enhanced template
+    const emailSent = await EmailService.sendNewsletterWelcome(email, name);
     
     if (!emailSent) {
+      console.error(`Failed to send newsletter welcome email to ${email}`);
       return NextResponse.json(
         { error: 'Failed to send welcome email' },
         { status: 500 }
       );
     }
+    
+    console.log(`Successfully sent newsletter welcome email to ${email}`);
     
     return NextResponse.json({
       success: true,
