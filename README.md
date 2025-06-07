@@ -686,4 +686,9 @@ Thanks to all our awesome contributors who are helping build Neural Nexus! 🔥
 ## License
 
 © 2025 Indie Hub. All rights reserved. Keep it real, fam! ✌️
+
+## GitAds Sponsored
+[![Sponsored by GitAds](https://gitads.dev/v1/ad-serve?source=drago-03/neural-nexus@github)](https://gitads.dev/v1/ad-track?source=drago-03/neural-nexus@github)
+
+
 <!-- GitAds-Verify: J3D1BXL9MMCM6IIKK6SJTPTK8BUOARZA -->
