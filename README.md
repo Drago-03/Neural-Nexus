@@ -14,6 +14,12 @@ _Star the Repo⭐_
   <a href="https://www.buymeacoffee.com/neuralnexus"><img src="https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=white&labelColor=555555" alt="Buy Me a Coffee"></a>
   <a href="https://www.producthunt.com/posts/neural-nexus"><img src="https://img.shields.io/badge/Product%20Hunt-Upvote-DA552F?style=for-the-badge&logo=producthunt&logoColor=white&labelColor=222222" alt="Product Hunt"></a>
   <a href="https://tech.dev/neural-nexus"><img src="https://img.shields.io/badge/tech.dev-Sponsor-9146FF?style=for-the-badge&logo=twitch&logoColor=white&labelColor=222222" alt="Sponsor"></a>
+  
+  <!-- Packages Button and Tracking Badges -->
+  <a href="https://www.npmjs.com/package/neural-nexus"><img src="https://img.shields.io/badge/Packages-npm-orange?style=for-the-badge&logo=npm&logoColor=white" alt="NPM Package"></a>
+  <a href="https://www.npmjs.com/package/neural-nexus"><img src="https://img.shields.io/npm/v/neural-nexus?style=for-the-badge&color=orange&logo=npm" alt="NPM Version"></a>
+  <a href="https://www.npmjs.com/package/neural-nexus"><img src="https://img.shields.io/npm/dm/neural-nexus?style=for-the-badge&color=orange&logo=npm" alt="NPM Downloads"></a>
+  <a href="https://github.com/Drago-03/neural-nexus-pkg/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/neural-nexus?style=for-the-badge&color=orange&logo=opensourceinitiative" alt="NPM License"></a>
 </div>
 
 ## Welcome to Neural Nexus
@@ -43,7 +49,8 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
 - **SendGrid**: Email delivery service for transactional emails
 - **Edge Functions**: Lightweight serverless functions for optimal performance
 
-## Setup Guide
+<details>
+<summary><strong>Setup Guide (click to expand)</strong></summary>
 
 1. **Clone the Repository**:
    ```bash
@@ -63,7 +70,8 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
    ```
    Then edit the file to add your actual credentials.
 
-4. **MongoDB Setup (User Profiles & Content)**:
+<details>
+<summary><strong>MongoDB Setup (click to expand)</strong></summary>
 
    a. Create a MongoDB Atlas account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (free tier available)
    
@@ -85,9 +93,11 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
       - If you encounter TLS/SSL errors, make sure you're using a clean connection string without extra parameters
       - Use this format: `mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority`
       - The app will automatically handle connection retries and fallbacks
+</details>
 
-5. **Supabase Setup (Main Database & Auth)**:
-   
+<details>
+<summary><strong>Supabase Setup (click to expand)</strong></summary>
+
    a. Create a Supabase project at [Supabase](https://supabase.com/) (free tier available)
    
    b. Get your API credentials:
@@ -127,8 +137,10 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
       - Go to Storage
       - Create buckets for: `models`, `avatars`, `thumbnails`
       - Set RLS policies for each bucket
+</details>
 
-6. **SendGrid Setup (Email Service)**:
+<details>
+<summary><strong>SendGrid Setup (click to expand)</strong></summary>
 
    a. Create a SendGrid account at [SendGrid](https://sendgrid.com/) (free tier available)
    
@@ -148,9 +160,11 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
       ```
    
    e. For more details, see the [Email Service Documentation](docs/email-service.md)
+</details>
 
-7. **Firebase Setup (Legacy/Optional)**:
-   
+<details>
+<summary><strong>Firebase Setup (Legacy/Optional) (click to expand)</strong></summary>
+
    The app is transitioning from Firebase to Supabase, but can still use Firebase for some features.
    
    a. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
@@ -172,12 +186,385 @@ We're inspired by the 'Radio on the Internet' concept for AI—powered by strate
       - Go to Project settings > General
       - Scroll down to "Your apps" and select your web app
       - Copy the Firebase config values to your `.env.local` file
+</details>
 
-8. **Run Locally**:
-   ```bash
-   npm run dev
-   ```
-   Open `http://localhost:3000` to view the application.
+<details>
+<summary><strong>Run Locally (click to expand)</strong></summary>
+
+```bash
+npm run dev
+```
+Open `http://localhost:3000` to view the application.
+
+</details>
+
+</details>
+
+---
+
+## Neural Nexus NPM Package
+
+A modern, TypeScript-first toolkit for connecting with AI models on the Neural Nexus platform. Effortlessly deploy, manage, and share models, integrate with a marketplace, and handle authentication and payments—all with a single, powerful npm package.
+
+**Official NPM:** [neural-nexus](https://www.npmjs.com/package/neural-nexus)
+
+<details>
+<summary><strong>Installation (click to expand)</strong></summary>
+
+**Stable:**
+```bash
+npm install neural-nexus
+```
+<button onclick="navigator.clipboard.writeText('npm install neural-nexus')">Copy</button>
+
+**Alpha (v1) Version:**
+```bash
+npm install neural-nexus@v1
+```
+<button onclick="navigator.clipboard.writeText('npm install neural-nexus@v1')">Copy</button>
+
+</details>
+
+---
+
+## API Key Management & Usage
+
+All API requests require authentication using an API key. You can generate and manage your API keys from your Neural Nexus dashboard.
+
+<details>
+<summary><strong>Step-by-Step Onboarding (click to expand)</strong></summary>
+
+1. **Sign up or log in** at Neural Nexus Dashboard
+2. **Navigate to API Keys** in your account settings
+3. **Click Generate New Key** and select the key type (test, development, production, etc.)
+4. **Copy your key** (it will only be shown once!)
+5. **Store your key securely** (use environment variables, never commit to code)
+
+</details>
+
+<details>
+<summary><strong>Authenticating Requests (click to expand)</strong></summary>
+
+Include your API key in the `Authorization` header:
+
+```bash
+Authorization: Bearer YOUR_API_KEY
+```
+<button onclick="navigator.clipboard.writeText('Authorization: Bearer YOUR_API_KEY')">Copy</button>
+
+</details>
+
+<details>
+<summary><strong>Example: JavaScript (fetch) (click to expand)</strong></summary>
+
+```js
+const response = await fetch('https://api.neuralnexus.biz/v1/models', {
+  headers: {
+    'Authorization': `Bearer ${process.env.NEURAL_NEXUS_API_KEY}`
+  }
+});
+const data = await response.json();
+```
+<button onclick="navigator.clipboard.writeText(`const response = await fetch('https://api.neuralnexus.biz/v1/models', {\n  headers: {\n    'Authorization': \`Bearer \\${process.env.NEURAL_NEXUS_API_KEY}\`\n  }\n});\nconst data = await response.json();`) ">Copy</button>
+
+</details>
+
+<details>
+<summary><strong>Example: Using the SDK (click to expand)</strong></summary>
+
+```js
+import { NeuralNexus } from 'neural-nexus';
+const nexus = new NeuralNexus({
+  apiKey: process.env.NEURAL_NEXUS_API_KEY,
+  environment: 'production'
+});
+```
+<button onclick="navigator.clipboard.writeText(`import { NeuralNexus } from 'neural-nexus';\nconst nexus = new NeuralNexus({\n  apiKey: process.env.NEURAL_NEXUS_API_KEY,\n  environment: 'production'\n});`) ">Copy</button>
+
+</details>
+
+<details>
+<summary><strong>Example: Managing API Keys in JavaScript (click to expand)</strong></summary>
+
+```js
+async function createApiKey() {
+  const API_KEY = process.env.NEURAL_NEXUS_API_KEY;
+  const response = await fetch('https://api.neuralnexus.biz/v1/api-keys', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      name: 'My Development Key',
+      type: 'development'
+    })
+  });
+  const data = await response.json();
+  console.log('New API key created:', data);
+  console.log('IMPORTANT: Save this key now as it won\'t be shown again!');
+  return data;
+}
+```
+<button onclick="navigator.clipboard.writeText(`async function createApiKey() {\n  const API_KEY = process.env.NEURAL_NEXUS_API_KEY;\n  const response = await fetch('https://api.neuralnexus.biz/v1/api-keys', {\n    method: 'POST',\n    headers: {\n      'Authorization': \`Bearer \\${API_KEY}\`,\n      'Content-Type': 'application/json'\n    },\n    body: JSON.stringify({\n      name: 'My Development Key',\n      type: 'development'\n    })\n  });\n  const data = await response.json();\n  console.log('New API key created:', data);\n  console.log('IMPORTANT: Save this key now as it won\\'t be shown again!');\n  return data;\n}`) ">Copy</button>
+
+</details>
+
+For more details, see the [official npm package page](https://www.npmjs.com/package/neural-nexus).
+
+---
+
+## Supabase Data Model
+
+<details>
+<summary><strong>Supabase Table: user_profiles (click to expand)</strong></summary>
+
+```sql
+CREATE TABLE user_profiles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  first_name TEXT,
+  last_name TEXT,
+  display_name TEXT,
+  email TEXT,
+  bio TEXT,
+  avatar_url TEXT,
+  website TEXT,
+  social_links JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+</details>
+
+<details>
+<summary><strong>Supabase Table: models (click to expand)</strong></summary>
+
+```sql
+CREATE TABLE models (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  price DECIMAL(10, 2) DEFAULT 0,
+  category TEXT,
+  tags TEXT[],
+  file_url TEXT,
+  file_path TEXT,
+  file_size BIGINT,
+  file_type TEXT,
+  thumbnail_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  downloads INTEGER DEFAULT 0,
+  rating DECIMAL(3, 2) DEFAULT 0,
+  is_public BOOLEAN DEFAULT true,
+  status TEXT DEFAULT 'active'
+);
+```
+
+</details>
+
+<details>
+<summary><strong>Setting Up Environment Variables on Vercel (click to expand)</strong></summary>
+
+- Go to your project settings in Vercel
+- Navigate to Environment Variables
+- Add all the variables from your `.env.local` file
+- Make sure to set `NEXT_PUBLIC_APP_ENV=production`
+- Redeploy your application to apply the changes
+
+</details>
+
+<details>
+<summary><strong>MongoDB Configuration for Production (click to expand)</strong></summary>
+
+- In your Vercel deployment, ensure MongoDB connection string is correctly set
+- Add `MONGODB_URI` and `MONGODB_DB_NAME` to your environment variables
+- If users report profile update errors, check the following:
+  - MongoDB connection string should be clean without unnecessary parameters
+  - The IP allowlist in MongoDB Atlas should include Vercel's deployment IPs
+  - The application includes fallback in-memory storage if the database connection fails
+  - User profiles will be stored temporarily and sync when the database connection is restored
+- For persistent database issues, consider using MongoDB Realm/Atlas App Services for better connectivity
+
+</details>
+
+<details>
+<summary><strong>Monitoring and Analytics (click to expand)</strong></summary>
+
+1. **Supabase Dashboard**: Track database usage, API calls, and authentication
+2. **Firebase Analytics** (if using): Track user engagement and app usage
+3. **Vercel Analytics**: Monitor page performance and user metrics
+
+</details>
+
+<details>
+<summary><strong>Edge Functions vs. Serverless Functions (click to expand)</strong></summary>
+
+This app uses both Edge Functions (for lightweight operations) and standard serverless functions (for heavier processing):
+
+- **Edge Functions**: Fast, lightweight API routes that run globally close to users
+- **Serverless Functions**: More powerful Node.js environments for database operations and complex processing
+
+</details>
+
+<details>
+<summary><strong>Web3 Wallet Integration (click to expand)</strong></summary>
+
+Neural Nexus includes a lightweight wallet connection system through the `SimpleCryptoProvider`. This replaces the previous TonConnect implementation.
+
+<details>
+<summary><strong>Enabling the Wallet Connection (click to expand)</strong></summary>
+
+To enable wallet connection in your application:
+
+1. Set the feature flag in your `.env.local` file:
+```bash
+NEXT_PUBLIC_ENABLE_SIMPLE_CRYPTO=true
+```
+
+2. The wallet connect button will automatically appear in the navbar when the feature flag is enabled.
+
+3. For custom integration, you can use the `SimpleCryptoButton` component:
+```tsx
+import dynamic from 'next/dynamic';
+
+// Import with dynamic to avoid SSR issues
+const SimpleCryptoButton = dynamic(
+  () => import('@/components/SimpleCryptoButton'),
+  { ssr: false }
+);
+
+// Then use it in your component
+function MyComponent() {
+  return <SimpleCryptoButton />;
+}
+```
+
+4. For direct access to wallet state, use the `useSimpleCrypto` hook:
+```tsx
+import { useSimpleCrypto } from '@/providers/SimpleCryptoProvider';
+
+function MyComponent() {
+  const { activeWallet, connectWallet, disconnectWallet } = useSimpleCrypto();
+  
+  return (
+    <div>
+      {activeWallet ? (
+        <div>Connected to: {activeWallet}</div>
+      ) : (
+        <button onClick={() => connectWallet('MetaMask')}>Connect</button>
+      )}
+    </div>
+  );
+}
+```
+
+</details>
+
+</details>
+
+<details>
+<summary><strong>Policies & Documentation (click to expand)</strong></summary>
+
+We maintain comprehensive documentation on how we handle data, models, and content. Please review our policies for complete transparency:
+
+- **Privacy Policy**: Learn how we protect your data and maintain information security. [Read More](docs/PRIVACY_POLICY.md)
+- **Content Policy**: Keep the vibes positive! Understand what content is cool to share on Neural Nexus. [Read More](docs/CONTENT_POLICY.md)
+- **Model Policies**: Rules for uploading and sharing AI models. Let's keep the AI game fair and innovative. [Read More](docs/MODEL_POLICIES.md)
+- **Cookie Policy**: We use cookies to make your experience smoother than butter. Find out how. [Read More](docs/COOKIE_POLICY.md)
+- **Updates & Changelog**: Stay updated with the latest changes and features. We're always leveling up! [Read More](docs/UPDATES.md)
+
+These docs are here to ensure we're all on the same page, building a safe and creative space for AI innovation. Got questions? Hit us up! 💬
+
+</details>
+
+<details>
+<summary><strong>Build Instructions (click to expand)</strong></summary>
+
+When building the project for production, you might encounter "document is not defined" errors for authentication pages. This is a common issue with Next.js when client-side features are used during static site generation.
+
+To solve this issue, use our custom build and start scripts:
+
+```bash
+# Step 1: Use our custom build script that patches the auth pages
+npm run custom-build
+
+# Step 2: Start the application using our custom server
+npm run custom-start
+```
+
+Our custom build script (`build-with-cleanup.sh`) handles the following:
+1. Cleans up previous build artifacts
+2. Runs the Next.js build process
+3. If auth page errors occur, it patches the build by:
+   - Creating fallback static HTML files for problematic routes
+   - Copying these files to the appropriate output directories
+
+The custom server (`dev-server.js`) then:
+1. Serves the static HTML fallbacks for auth routes
+2. Handles all other requests normally through Next.js
+
+This approach ensures that authentication pages work correctly in production without the "document is not defined" errors.
+
+</details>
+
+<details>
+<summary><strong>Build Instructions for Auth Pages (click to expand)</strong></summary>
+
+Next.js has challenges with client-side authentication pages during static site generation, often resulting in "document is not defined" errors. This project includes special handling to resolve these issues:
+
+<details>
+<summary><strong>Using the Custom Build Process (click to expand)</strong></summary>
+
+```bash
+# Run the custom build script that handles auth page issues
+npm run custom-build
+```
+
+This script:
+1. Cleans previous build artifacts
+2. Creates static HTML fallbacks for auth pages if needed
+3. Runs the build with proper environment variables
+4. Patches the generated files to ensure auth pages work correctly
+
+</details>
+
+<details>
+<summary><strong>Using the Custom Server (click to expand)</strong></summary>
+
+After building the project, start it with:
+
+```bash
+# Start the custom server that handles auth pages
+npm run custom-start
+```
+
+This custom server serves static HTML fallbacks for authentication pages, preventing issues with client-side code during the initial page load.
+
+</details>
+
+<details>
+<summary><strong>How It Works (click to expand)</strong></summary>
+
+The solution uses multiple techniques:
+- Middleware detection for build vs. runtime environments
+- Static HTML fallbacks for auth pages
+- Custom server for serving static content
+- Next.js configuration to properly handle client-only pages
+
+If you modify auth-related pages, ensure the build process is aware of these pages by updating the configuration in:
+- `middleware.ts`
+- `next.config.js`
+- `build-with-cleanup.sh`
+
+</details>
+
+</details>
+
+</details>
 
 ## Community & Support
 
